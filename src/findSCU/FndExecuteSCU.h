@@ -38,6 +38,7 @@ public:
 	/// destructor
 	virtual ~CFndExecuteSCUCallback() {}
 
+public:
 	/** callback method that is called once for each incoming C-FIND-RSP message.
 	*  @param request DIMSE command of the original C-FIND request
 	*  @param responseCount number of current response
@@ -92,6 +93,7 @@ public:
 	/// destructor
 	virtual ~CFndExecuteSCUDefaultCallback() {}
 
+public:
 	/** callback method that is called once for each incoming C-FIND-RSP message.
 	*  @param request DIMSE command of the original C-FIND request
 	*  @param responseCount number of current response
@@ -129,6 +131,7 @@ public:
 	/// destructor. Destroys network structure if not done already.
 	virtual ~CFndExecuteSCU();
 
+public:
 	/** initialize the network structure. This should be done only once.
 	*  @param acse_timeout timeout for ACSE operations, in seconds
 	*  @return EC_Normal if successful, an error code otherwise

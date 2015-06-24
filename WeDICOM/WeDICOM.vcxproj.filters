@@ -54,6 +54,12 @@
     <ClCompile Include="..\src\DcmJson\WEJsonDataset.cpp">
       <Filter>DcmJson</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\moveSCU\MoveExecuteSCU.cpp">
+      <Filter>moveSCU</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\moveSCU\WEMoveSCU.cpp">
+      <Filter>moveSCU</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -70,6 +76,12 @@
     </ClInclude>
     <ClInclude Include="..\src\DcmJson\WEJsonDataset.h">
       <Filter>DcmJson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\moveSCU\MoveExecuteSCU.h">
+      <Filter>moveSCU</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\moveSCU\WEMoveSCU.h">
+      <Filter>moveSCU</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
