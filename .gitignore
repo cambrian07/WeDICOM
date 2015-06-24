@@ -28,6 +28,20 @@
 *.lastbuildstate
 *.log
 *.suo
+*.pdb
+*.exp
+*.ilk
+*.tlog
+*.log
+*.idb
+*.vcxproj.user
+
+# directoris
+packages/
+Debug/
+Release/
+
+
 
 # Executables
 *.exe
