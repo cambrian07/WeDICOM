@@ -1,17 +1,75 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="源文件">
+    <Filter Include="source files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="头文件">
+    <Filter Include="head files">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="资源文件">
+    <Filter Include="findSCU">
+      <UniqueIdentifier>{8c0003c0-b423-410b-b562-fb043b74d2d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="moveSCU">
+      <UniqueIdentifier>{e1a67b24-4f65-49e9-a44c-e4daca30ea0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="storeSCP">
+      <UniqueIdentifier>{b39d9c96-4d19-4c70-adb3-463e5d93a943}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="storeSCU">
+      <UniqueIdentifier>{121bd49b-b91d-4ed7-a0a1-36f60be047c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="qrSCP">
+      <UniqueIdentifier>{1b5f45dc-521b-4dfb-b010-100b88cb3c27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="worklistSCP">
+      <UniqueIdentifier>{523be824-8b00-4052-879b-de342bfdee08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DcmJson">
+      <UniqueIdentifier>{ae8f09b7-e31a-4912-848b-10c1ee28e25f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="logger">
+      <UniqueIdentifier>{ec61931d-4049-450b-b590-cf9bd120b48b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="resource files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="WeDICOM.cpp">
+      <Filter>source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\findSCU\FndExecuteSCU.cpp">
+      <Filter>findSCU</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\findSCU\WEFindSCU.cpp">
+      <Filter>findSCU</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\logger\WEAppender.cpp">
+      <Filter>logger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\DcmJson\WEJsonDataset.cpp">
+      <Filter>DcmJson</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\findSCU\FndExecuteSCU.h">
+      <Filter>findSCU</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\findSCU\WEFindSCU.h">
+      <Filter>findSCU</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\logger\WEAppender.h">
+      <Filter>logger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\DcmJson\WEJsonDataset.h">
+      <Filter>DcmJson</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
