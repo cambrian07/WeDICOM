@@ -77,9 +77,11 @@ private:
 
 // private function
 private:
-	int PerformQuery(const char * strIP, int nPort, const char * strCallingAE, const char * strCalledAE, OFList<DcmDataset> & vecDataset, OFList<OFString> & vecTagValue);
+	int PerformQuery(const char * strIP, int nPort, const char * strCallingAE, const char * strCalledAE, OFList<DcmDataset> & vecDataset, OFList<OFString> & vecTagValue, const char* strQueryLevel = "STUDY");
 
 	bool InitLog4Cplus();
+
+	bool ParseJsontoDcmDataset(DcmDataset& dcmDataset, const char* strJson);
 
 // public function
 public:

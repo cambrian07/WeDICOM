@@ -58,21 +58,6 @@ OFCondition CWEJsonDataset::writeJson(OFString & strJson)
 OFCondition CWEJsonDataset::LoadfromJson(const OFString & strJson)
 {
 
-	// just for test
-
-	//loadFile("F:\\DICOM\\DCMTKÑ§Ï°±Ê¼Ç\\DICOM--worklist\\wlistqry.wl");
-	loadFile("D:\\test.wl");
-	//putAndInsertString(DcmTagKey(0x0010, 0x0040), "M");
-	//putAndInsertString(DCM_TransferSyntaxUID, UID_LittleEndianExplicitTransferSyntax);
-	//putAndInsertString(DcmTagKey(0x0010, 0x0040), "M");
-
-	OFString strDestJson;
-	writeJson(strDestJson);
-
-	OutputDebugStringA(strDestJson.c_str());
-
-	return EC_Normal;
-
 	OFCondition cond;
 
 	if (strJson.length() <= 0)
@@ -82,8 +67,32 @@ OFCondition CWEJsonDataset::LoadfromJson(const OFString & strJson)
 	}
 
 
+	clear();
+	//putAndInsertString(DCM_TransferSyntaxUID, UID_LittleEndianExplicitTransferSyntax);
+
+	putAndInsertString(DCM_AccessionNumber, "");
+	putAndInsertString(DCM_PatientAge, "");
+	putAndInsertString(DCM_PatientBirthDate, "");
+	putAndInsertString(DCM_PatientID, "");
+	putAndInsertString(DCM_PatientName, "");
+	putAndInsertString(DCM_PatientSex, "");
+	putAndInsertString(DCM_PatientWeight, "");
+	putAndInsertString(DCM_QueryRetrieveLevel, "STUDY");
+	putAndInsertString(DCM_StudyDate, "");
+	putAndInsertString(DCM_ReferringPhysicianName, "");
+	putAndInsertString(DCM_RetrieveAETitle, "");
+	putAndInsertString(DCM_StudyDescription, "");
+	putAndInsertString(DCM_StudyID, "");
+	putAndInsertString(DCM_StudyInstanceUID, "");
+	putAndInsertString(DCM_StudyTime, "");
+
+
+
+	OFString strDestJson;
+	writeJson(strDestJson);
+
+	OutputDebugStringA(strDestJson.c_str());
 
 	return EC_Normal;
-
 
 }

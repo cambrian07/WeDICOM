@@ -2,6 +2,7 @@
 #include "../logger/WEAppender.h"
 #include "../DcmJson/WEJsonDataset.h"
 
+#include "json/json.h"
 
 #define OFFIS_CONSOLE_FINDSCU "findscu"
 
@@ -103,7 +104,7 @@ CWEFindSCU::~CWEFindSCU(void)
 }
 
 
-int CWEFindSCU::PerformQuery(const char * strIP, int nPort, const char * strCallingAE, const char * strCalledAE, OFList<DcmDataset> & vecDataset, OFList<OFString> & vecTagValue)
+int CWEFindSCU::PerformQuery(const char * strIP, int nPort, const char * strCallingAE, const char * strCalledAE, OFList<DcmDataset> & vecDataset, OFList<OFString> & vecTagValue, const char* strQueryLevel /*= "STUDY"*/)
 {
 	OFList<OFString>      fileNameList;
 	OFBool                opt_abortAssociation = OFFalse;
@@ -161,10 +162,24 @@ int CWEFindSCU::PerformQuery(const char * strIP, int nPort, const char * strCall
 		//opt_networkTransferSyntax = EXS_BigEndianExplicit;
 		//opt_networkTransferSyntax = EXS_LittleEndianImplicit;
 
+
 		//opt_abstractSyntax = UID_FINDModalityWorklistInformationModel;
 		//opt_abstractSyntax = UID_FINDPatientRootQueryRetrieveInformationModel;
-		opt_abstractSyntax = UID_FINDStudyRootQueryRetrieveInformationModel;
+		//opt_abstractSyntax = UID_FINDStudyRootQueryRetrieveInformationModel;
 		//opt_abstractSyntax = UID_RETIRED_FINDPatientStudyOnlyQueryRetrieveInformationModel;
+		OFString strModel(strQueryLevel);
+		if (strModel.compare("STUDY") == 0)
+		{
+			opt_abstractSyntax = UID_FINDStudyRootQueryRetrieveInformationModel;
+		}
+		if (strModel.compare("PATIENT") == 0)
+		{
+			opt_abstractSyntax = UID_FINDPatientRootQueryRetrieveInformationModel;
+		}
+		else
+		{
+			opt_abstractSyntax = UID_FINDModalityWorklistInformationModel;
+		}
 
 
 		//if (cmd.findOption("--enable-new-vr"))
@@ -375,6 +390,37 @@ bool CWEFindSCU::InitLog4Cplus()
 
 }
 
+bool CWEFindSCU::ParseJsontoDcmDataset(DcmDataset & dcmDataset, const char * strJson)
+{
+
+	Json::Reader reader;
+	Json::Value root;
+	if (!reader.parse(strJson, root, false))
+	{
+		return false;
+	}
+
+	dcmDataset.clear();
+
+	dcmDataset.putAndInsertString(DCM_AccessionNumber, root["AccessionNumber"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_PatientAge, root["PatientAge"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_PatientBirthDate, root["PatientBirthDate"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_PatientID, root["PatientID"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_PatientName, root["PatientName"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_PatientSex, root["PatientSex"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_PatientWeight, root["PatientWeight"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_QueryRetrieveLevel, root["QueryRetrieveLevel"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_StudyDate, root["StudyDate"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_ReferringPhysicianName, root["ReferringPhysicianName"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_RetrieveAETitle, root["RetrieveAETitle"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_StudyDescription, root["StudyDescription"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_StudyID, root["StudyID"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_StudyInstanceUID, root["StudyInstanceUID"].asString().c_str());
+	dcmDataset.putAndInsertString(DCM_StudyTime, root["StudyTime"].asString().c_str());
+
+	return true;
+}
+
 
 void CWEFindSCU::SetEventHandler(IWEFindSCUEventHandler * pEventHandler)	
 {
@@ -399,17 +445,22 @@ bool CWEFindSCU::SendQuery(const char* pszIP,
 		return false;
 	}
 	DcmDataset dataset;
+	OFString strQueryLevel;
 
-	CWEJsonDataset jsonDataset;
-	if ((jsonDataset.LoadfromJson(pszSearchMask)).bad())
+	if (!ParseJsontoDcmDataset(dataset, pszSearchMask))
 	{
 		return false;
 	}
-	dataset.copyFrom(jsonDataset);
 
 	datasetList.push_back(dataset);
 
-	PerformQuery(pszIP, nPort, pszCallingAE, pszCalledAE, datasetList, tagList);
+	dataset.findAndGetOFString(DCM_QueryRetrieveLevel, strQueryLevel);
+	if (strQueryLevel.length() <= 0)
+	{
+		return false;
+	}
+
+	PerformQuery(pszIP, nPort, pszCallingAE, pszCalledAE, datasetList, tagList, strQueryLevel.c_str());
 	return true;
 }
 
