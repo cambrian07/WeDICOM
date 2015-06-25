@@ -50,10 +50,8 @@ void CMoveExecuteSCUCallback::setPresentationContextID(T_ASC_PresentationContext
 /* ---------------- class CFndExecuteSCUDefaultCallback ---------------- */
 
 CMoveExecuteSCUDefaultCallback::CMoveExecuteSCUDefaultCallback(
-	OFBool extractResponsesToFile,
 	int cancelAfterNResponses)
 	: CMoveExecuteSCUCallback()
-	, extractResponsesToFile_(extractResponsesToFile)
 	, cancelAfterNResponses_(cancelAfterNResponses)
 {
 }
@@ -118,7 +116,24 @@ void CMoveExecuteSCUSubOpDefaultCallback::callback(T_ASC_Network * aNet, T_ASC_A
 /* ---------------- class CMoveExecuteSCU ---------------- */
 
 CMoveExecuteSCU::CMoveExecuteSCU()
+	:opt_repeatCount(1),
+	opt_out_networkTransferSyntax(EXS_Unknown),
+	opt_moveDestination(NULL),
+	opt_cancelAfterNResponses(-1),
+	opt_blockMode(DIMSE_BLOCKING),
+	opt_dimse_timeout(0),
+	opt_ignorePendingDatasets(OFTrue),
+	net(NULL), /* the global DICOM network */
+	overrideKeys(NULL),
+	opt_moveAbstractSyntax(UID_MOVEPatientRootQueryRetrieveInformationModel)
+
 {
+
+	//opt_moveAbstractSyntax = UID_MOVEPatientRootQueryRetrieveInformationModel;
+	//opt_moveAbstractSyntax = UID_MOVEStudyRootQueryRetrieveInformationModel;
+	//opt_moveAbstractSyntax = UID_RETIRED_MOVEPatientStudyOnlyQueryRetrieveInformationModel ;
+
+		
 }
 
 CMoveExecuteSCU::~CMoveExecuteSCU()
@@ -305,24 +320,30 @@ OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, const char *fnam
 	/* replace specific keys by those in overrideKeys */
 	substituteOverrideKeys(dcmff.getDataset());
 
-	sopClass = querySyntax[opt_queryModel].moveSyntax;
+	//sopClass = querySyntax[opt_queryModel].moveSyntax;
+	sopClass = opt_moveAbstractSyntax.c_str();
 
 	/* which presentation context should be used */
 	presId = ASC_findAcceptedPresentationContextID(assoc, sopClass);
 	if (presId == 0) return DIMSE_NOVALIDPRESENTATIONCONTEXTID;
 
-	if (movescuLogger.isEnabledFor(OFLogger::INFO_LOG_LEVEL)) {
+	//if (movescuLogger.isEnabledFor(OFLogger::INFO_LOG_LEVEL))
+	{
 		DCMNET_INFO( "Sending Move Request: MsgID " << msgId);
 		DCMNET_INFO( "Request:" << OFendl << DcmObject::PrintHelper(*dcmff.getDataset()));
 	}
 
+	//callbackData.assoc = assoc;
+	//callbackData.presId = presId;
+
+	// for test
+	CMoveExecuteSCUCallback* callback = NULL;
+
 	/* prepare the callback data */
-	CMoveExecuteSCUDefaultCallback defaultCallback(extractResponsesToFile, cancelAfterNResponses);
+	CMoveExecuteSCUDefaultCallback defaultCallback(opt_cancelAfterNResponses);
 	if (callback == NULL) callback = &defaultCallback;
 	callback->setAssociation(assoc);
 	callback->setPresentationContextID(presId);
-	callbackData.assoc = assoc;
-	callbackData.presId = presId;
 
 	req.MessageID = msgId;
 	strcpy(req.AffectedSOPClassUID, sopClass);
@@ -338,7 +359,7 @@ OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, const char *fnam
 	}
 
 	OFCondition cond = DIMSE_moveUser(assoc, presId, &req, dcmff.getDataset(),
-		moveCallback, &callbackData, opt_blockMode, opt_dimse_timeout, net, subOpCallback,
+		moveCallback, &callback, opt_blockMode, opt_dimse_timeout, net, subOpCallback,
 		NULL, &rsp, &statusDetail, &rspIds, opt_ignorePendingDatasets);
 
 	if (cond == EC_Normal) {
@@ -370,5 +391,24 @@ OFCondition CMoveExecuteSCU::cmove(T_ASC_Association * assoc, const char *fname)
 	while (cond.good() && n--)
 		cond = moveSCU(assoc, fname);
 	return cond;
+}
+
+OFCondition CMoveExecuteSCU::sendRequest()
+{
+
+
+
+
+	return OFCondition();
+}
+
+OFCondition CMoveExecuteSCU::performRetrieve(const char * peer, unsigned int port, const char * ourTitle, const char * peerTitle, const char * abstractSyntax, E_TransferSyntax preferredTransferSyntax, T_DIMSE_BlockingMode blockMode, int dimse_timeout, Uint32 maxReceivePDULength, OFBool secureConnection, OFBool abortAssociation, unsigned int repeatCount, int cancelAfterNResponses, OFList<OFString>* overrideKeys, CMoveExecuteSCUCallback * callback, OFList<OFString>* fileNameList)
+{
+	return OFCondition();
+}
+
+OFCondition CMoveExecuteSCU::performRetrievebyDataset(const char * peer, unsigned int port, const char * ourTitle, const char * peerTitle, const char * abstractSyntax, E_TransferSyntax preferredTransferSyntax, T_DIMSE_BlockingMode blockMode, int dimse_timeout, Uint32 maxReceivePDULength, OFBool secureConnection, OFBool abortAssociation, unsigned int repeatCount, int cancelAfterNResponses, OFList<OFString>* overrideKeys, CMoveExecuteSCUCallback * callback, OFList<DcmDataset>* datasetList)
+{
+	return OFCondition();
 }
 

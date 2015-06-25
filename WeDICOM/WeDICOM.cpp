@@ -75,7 +75,6 @@ void main()
 	dcmJson["PatientSex"] = "";
 	dcmJson["PatientWeight"] = "";
 	dcmJson["QueryRetrieveLevel"] = "STUDY";
-	dcmJson["QueryRetrieveLevel"] = "PATIENT";
 	dcmJson["ReferringPhysicianName"] = "";
 	dcmJson["RetrieveAETitle"] = "";
 	dcmJson["StudyDate"] = "";
@@ -84,6 +83,10 @@ void main()
 	dcmJson["StudyInstanceUID"] = "";
 	dcmJson["StudyTime"] = "";
 
+
+	// for test;
+	dcmJson["QueryRetrieveLevel"] = "PATIENT";
+	dcmJson["PatientName"] = "Liu Qing Zhu";
 
 
 	std::string strDcmJson = writer.write(dcmJson);
@@ -94,8 +97,11 @@ void main()
 	CWEFindSCU findSCU;
 	findSCU.SetEventHandler(eventHandler);
 	//findSCU.SendQuery("192.168.1.108", 1004, "FINDSCU", "SVPACS", "aaa");
-	findSCU.SendQuery("127.0.0.1", 1004, "WEPACS", "DCMQRSCP", strDcmJson.c_str());
+	//findSCU.SendQuery("127.0.0.1", 1004, "WEPACS", "DCMQRSCP", strDcmJson.c_str());
 
-	return ;
+	// for junquzongyuan
+	findSCU.SendQuery("10.0.55.249", 104, "AE_YDCF", "AE_PACSB", strDcmJson.c_str());
+
+	return;
 }
 

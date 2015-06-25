@@ -86,7 +86,6 @@ public:
 	*    given number of incoming C-FIND-RSP messages
 	*/
 	CMoveExecuteSCUDefaultCallback(
-		OFBool extractResponsesToFile,
 		int cancelAfterNResponses);
 
 	/// destructor
@@ -106,8 +105,6 @@ public:
 
 private:
 
-	/// if true, C-FIND-RSP datasets will be stored as DICOM files
-	OFBool extractResponsesToFile_;
 
 	/// if non-negative, a C-FIND-CANCEL will be issued after the given number of incoming C-FIND-RSP messages
 	int cancelAfterNResponses_;
@@ -232,16 +229,127 @@ public:
 
 	OFCondition	cmove(T_ASC_Association * assoc, const char *fname);
 
-
+	OFCondition sendRequest();
 
 
 	// callback
 
 
 
+	/** main worker method that negotiates an association, executes one or more
+	*  C-FIND-RQ transactions, processes the responses and closes the association
+	*  once everything is finished (or an error has occured).
+	*  @param peer hostname or IP address of peer SCP host
+	*  @param port TCP port number of peer SCP host
+	*  @param ourTitle calling AE title
+	*  @param peerTitle called AE title
+	*  @param abstractSyntax SOP Class UID or Meta SOP Class UID of service
+	*  @param preferredTransferSyntax. May be Unknown, Implicit Little Endian, or any of the
+	*    two uncompressed explicit VR transfer syntaxes. By default (unknown), local endian
+	*    explicit VR is proposed first, followed by opposite endian explicit VR, followed by
+	*    implicit VR. This behaviour can be modified by explicitly specifying the preferred
+	*    explicit VR transfer syntax. With Little Endian Implicit, only Implicit VR is proposed.
+	*  @param blockMode DIMSE blocking mode
+	*  @param dimse_timeout timeout for DIMSE operations (in seconds)
+	*  @param maxReceivePDULength limit the maximum PDU size for incoming PDUs to the given value.
+	*    This value should be less than or equal to ASC_DEFAULTMAXPDU, and is usually identical
+	*    to ASC_DEFAULTMAXPDU (other values are only useful for debugging purposes).
+	*  @param secureConnection this flag, if true, requests a secure TLS connection to be used
+	*    instead of a normal connection. This will only work if DCMTK has been compiled with
+	*    OpenSSL support (WITH_OPENSSL) and if a transport layer object supporting secure
+	*    connections has been set with setTransportLayer() prior to this call.
+	*  @param abortAssociation abort association instead of releasing it (for debugging purposes)
+	*  @param repeatCount number of times this query should be repeated
+	*    (for debugging purposes, works only with default callback)
+	*  @param extractResponsesToFile if true, extract incoming response messages to file
+	*    (works only with default callback)
+	*  @param cancelAfterNResponses issue C-FIND-CANCEL after given number of responses
+	*    (works only with default callback)
+	*  @param overrideKeys list of keys/paths that override those in the query files, if any.
+	*    Either the list of query files or override keys or both should be non-empty, because the query
+	*    dataset will be empty otherwise. For path syntax see DcmPath.
+	*  @param callback user-provided non-default callback handler object.
+	*    For default callback, pass NULL.
+	*  @param fileNameList list of query files. Each file is expected to be a DICOM file
+	*    containing a dataset that is used as a query, possibly modified by override keys, if any.
+	*    This parameter, if non-NULL, points to a list of filenames (paths).
+	*  @return EC_Normal if successful, an error code otherwise
+	*/
+	OFCondition performRetrieve(
+		const char *peer,
+		unsigned int port,
+		const char *ourTitle,
+		const char *peerTitle,
+		const char *abstractSyntax,
+		E_TransferSyntax preferredTransferSyntax,
+		T_DIMSE_BlockingMode blockMode,
+		int dimse_timeout,
+		Uint32 maxReceivePDULength,
+		OFBool secureConnection,
+		OFBool abortAssociation,
+		unsigned int repeatCount,
+		int cancelAfterNResponses,
+		OFList<OFString> *overrideKeys,
+		CMoveExecuteSCUCallback *callback = NULL,
+		OFList<OFString> *fileNameList = NULL);
 
-
-
+	// dataset
+	/** main worker method that negotiates an association, executes one or more
+	*  C-FIND-RQ transactions, processes the responses and closes the association
+	*  once everything is finished (or an error has occured).
+	*  @param peer hostname or IP address of peer SCP host
+	*  @param port TCP port number of peer SCP host
+	*  @param ourTitle calling AE title
+	*  @param peerTitle called AE title
+	*  @param abstractSyntax SOP Class UID or Meta SOP Class UID of service
+	*  @param preferredTransferSyntax. May be Unknown, Implicit Little Endian, or any of the
+	*    two uncompressed explicit VR transfer syntaxes. By default (unknown), local endian
+	*    explicit VR is proposed first, followed by opposite endian explicit VR, followed by
+	*    implicit VR. This behaviour can be modified by explicitly specifying the preferred
+	*    explicit VR transfer syntax. With Little Endian Implicit, only Implicit VR is proposed.
+	*  @param blockMode DIMSE blocking mode
+	*  @param dimse_timeout timeout for DIMSE operations (in seconds)
+	*  @param maxReceivePDULength limit the maximum PDU size for incoming PDUs to the given value.
+	*    This value should be less than or equal to ASC_DEFAULTMAXPDU, and is usually identical
+	*    to ASC_DEFAULTMAXPDU (other values are only useful for debugging purposes).
+	*  @param secureConnection this flag, if true, requests a secure TLS connection to be used
+	*    instead of a normal connection. This will only work if DCMTK has been compiled with
+	*    OpenSSL support (WITH_OPENSSL) and if a transport layer object supporting secure
+	*    connections has been set with setTransportLayer() prior to this call.
+	*  @param abortAssociation abort association instead of releasing it (for debugging purposes)
+	*  @param repeatCount number of times this query should be repeated
+	*    (for debugging purposes, works only with default callback)
+	*  @param extractResponsesToFile if true, extract incoming response messages to file
+	*    (works only with default callback)
+	*  @param cancelAfterNResponses issue C-FIND-CANCEL after given number of responses
+	*    (works only with default callback)
+	*  @param overrideKeys list of keys/paths that override those in the query files, if any.
+	*    Either the list of query files or override keys or both should be non-empty, because the query
+	*    dataset will be empty otherwise. For path syntax see DcmPath.
+	*  @param callback user-provided non-default callback handler object.
+	*    For default callback, pass NULL.
+	*  @param datasetList list of query datasets. Each file is expected to be a DICOM file
+	*    containing a dataset that is used as a query, possibly modified by override keys, if any.
+	*    This parameter, if non-NULL, points to a list of filenames (paths).
+	*  @return EC_Normal if successful, an error code otherwise
+	*/
+	OFCondition performRetrievebyDataset(
+		const char *peer,
+		unsigned int port,
+		const char *ourTitle,
+		const char *peerTitle,
+		const char *abstractSyntax,
+		E_TransferSyntax preferredTransferSyntax,
+		T_DIMSE_BlockingMode blockMode,
+		int dimse_timeout,
+		Uint32 maxReceivePDULength,
+		OFBool secureConnection,
+		OFBool abortAssociation,
+		unsigned int repeatCount,
+		int cancelAfterNResponses,
+		OFList<OFString> *overrideKeys,
+		CMoveExecuteSCUCallback*callback = NULL,
+		OFList<DcmDataset> *datasetList = NULL);
 
 
 
@@ -279,6 +387,26 @@ private:
 
 
 private:
+
+
+	DcmDataset * overrideKeys;
+	E_TransferSyntax	opt_out_networkTransferSyntax;
+	OFCmdSignedInt	opt_cancelAfterNResponses;
+	const char * 	opt_moveDestination;
+	T_DIMSE_BlockingMode	opt_blockMode;
+	int	opt_dimse_timeout;
+	OFCmdUnsignedInt	opt_repeatCount;
+	OFBool	opt_ignorePendingDatasets;
+	T_ASC_Network *	net;
+
+
+	//querySyntax;
+	//opt_queryModel;
+
+	OFString opt_moveAbstractSyntax;
+
+
+
 
 
 };

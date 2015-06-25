@@ -21,10 +21,45 @@ CMoveExecuteSCUSubOpStoreSCPCallback::CMoveExecuteSCUSubOpStoreSCPCallback()
 {
 }
 
+void CMoveExecuteSCUSubOpStoreSCPCallback::setAssociation(T_ASC_Association * pAssoc)
+{
+	assoc = pAssoc;
+}
+
+void CMoveExecuteSCUSubOpStoreSCPCallback::setDcmFileFormat(DcmFileFormat * pDcmff)
+{
+	dcmff = pDcmff;
+}
+
+void CMoveExecuteSCUSubOpStoreSCPCallback::setImageFileName(const char * strImageFileName)
+{
+	imageFileName = strImageFileName;
+}
+
 
 /* ---------------- class CMoveExecuteSCUSubOpStoreSCPDefaultCallback ---------------- */
 CMoveExecuteSCUSubOpStoreSCPDefaultCallback::CMoveExecuteSCUSubOpStoreSCPDefaultCallback()
+	:opt_sleepDuring(0),
+	opt_useMetaheader(OFTrue),
+	opt_writeTransferSyntax(EXS_Unknown),
+	opt_groupLength(EGL_recalcGL),
+	opt_sequenceType(EET_ExplicitLength),
+	opt_paddingType(EPD_withoutPadding),
+	opt_filepad(0),
+	opt_itempad(0),
+	opt_bitPreserving(OFFalse),
+	opt_ignore(OFFalse),
+	opt_abortDuringStore(OFFalse),
+	opt_abortAfterStore(OFFalse),
+	opt_correctUIDPadding(OFFalse),
+	opt_outputDirectory(".")
+
+
+
 {
+
+
+
 }
 
 void CMoveExecuteSCUSubOpStoreSCPDefaultCallback::callback(T_DIMSE_StoreProgress * progress, T_DIMSE_C_StoreRQ * req, char * imageFileName, DcmDataset ** imageDataSet, T_DIMSE_C_StoreRSP * rsp, DcmDataset ** statusDetail)
@@ -34,8 +69,8 @@ void CMoveExecuteSCUSubOpStoreSCPDefaultCallback::callback(T_DIMSE_StoreProgress
 
 	if ((opt_abortDuringStore && progress->state != DIMSE_StoreBegin) ||
 		(opt_abortAfterStore && progress->state == DIMSE_StoreEnd)) {
-		OFLOG_INFO(movescuLogger, "ABORT initiated (due to command line options)");
-		ASC_abortAssociation(OFstatic_cast(StoreCallbackData*, callbackData)->assoc);
+		DCMNET_INFO("ABORT initiated (due to command line options)");
+		ASC_abortAssociation(assoc);
 		rsp->DimseStatus = STATUS_STORE_Refused_OutOfResources;
 		return;
 	}
@@ -50,8 +85,9 @@ void CMoveExecuteSCUSubOpStoreSCPDefaultCallback::callback(T_DIMSE_StoreProgress
 	// generating this output. If it is set to level "INFO" we generate the
 	// output, if it's set to "DEBUG" then we'll assume that there is debug output
 	// generated for each PDU elsewhere.
-	OFLogger progressLogger = OFLog::getLogger("dcmtk.apps." OFFIS_CONSOLE_APPLICATION ".progress");
-	if (progressLogger.getChainedLogLevel() == OFLogger::INFO_LOG_LEVEL)
+
+	//OFLogger progressLogger = OFLog::getLogger("dcmtk.apps." OFFIS_CONSOLE_APPLICATION ".progress");
+	//if (progressLogger.getChainedLogLevel() == OFLogger::INFO_LOG_LEVEL)
 	{
 		switch (progress->state)
 		{
@@ -82,20 +118,20 @@ void CMoveExecuteSCUSubOpStoreSCPDefaultCallback::callback(T_DIMSE_StoreProgress
 
 		if ((imageDataSet != NULL) && (*imageDataSet != NULL) && !opt_bitPreserving && !opt_ignore)
 		{
-			StoreCallbackData *cbdata = OFstatic_cast(StoreCallbackData*, callbackData);
+			//StoreCallbackData *cbdata = OFstatic_cast(StoreCallbackData*, callbackData);
 			/* create full path name for the output file */
 			OFString ofname;
-			OFStandard::combineDirAndFilename(ofname, opt_outputDirectory, cbdata->imageFileName, OFTrue /* allowEmptyDirName */);
+			OFStandard::combineDirAndFilename(ofname, opt_outputDirectory, imageFileName, OFTrue /* allowEmptyDirName */);
 
 			E_TransferSyntax xfer = opt_writeTransferSyntax;
 			if (xfer == EXS_Unknown) xfer = (*imageDataSet)->getOriginalXfer();
 
-			OFCondition cond = cbdata->dcmff->saveFile(ofname.c_str(), xfer, opt_sequenceType, opt_groupLength,
+			OFCondition cond = dcmff->saveFile(ofname.c_str(), xfer, opt_sequenceType, opt_groupLength,
 				opt_paddingType, OFstatic_cast(Uint32, opt_filepad), OFstatic_cast(Uint32, opt_itempad),
 				(opt_useMetaheader) ? EWM_fileformat : EWM_dataset);
 			if (cond.bad())
 			{
-				OFLOG_ERROR(movescuLogger, "cannot write DICOM file: " << ofname);
+				DCMNET_ERROR("cannot write DICOM file: " << ofname);
 				rsp->DimseStatus = STATUS_STORE_Refused_OutOfResources;
 			}
 
@@ -108,7 +144,7 @@ void CMoveExecuteSCUSubOpStoreSCPDefaultCallback::callback(T_DIMSE_StoreProgress
 				/* which SOP class and SOP instance ? */
 				if (!DU_findSOPClassAndInstanceInDataSet(*imageDataSet, sopClass, sopInstance, opt_correctUIDPadding))
 				{
-					OFLOG_FATAL(movescuLogger, "bad DICOM file: " << imageFileName);
+					DCMNET_FATAL("bad DICOM file: " << imageFileName);
 					rsp->DimseStatus = STATUS_STORE_Error_CannotUnderstand;
 				}
 				else if (strcmp(sopClass, req->AffectedSOPClassUID) != 0)
@@ -128,7 +164,20 @@ void CMoveExecuteSCUSubOpStoreSCPDefaultCallback::callback(T_DIMSE_StoreProgress
 
 /* ---------------- class CMoveSCUSubOpSCP ---------------- */
 CMoveSCUSubOpSCP::CMoveSCUSubOpSCP()
+	: opt_sleepAfter(0),
+	opt_sleepDuring(0),
+	opt_maxPDU(ASC_DEFAULTMAXPDU),
+	opt_useMetaheader(OFTrue),
+	opt_acceptAllXfers(OFFalse),
+	opt_bitPreserving(OFFalse),
+	opt_ignore(OFFalse),
+	opt_in_networkTransferSyntax(EXS_Unknown),
+	opt_blockMode(DIMSE_BLOCKING),
+	opt_dimse_timeout(0)
+
+
 {
+
 }
 
 CMoveSCUSubOpSCP::~CMoveSCUSubOpSCP()
@@ -431,15 +480,28 @@ OFCondition CMoveSCUSubOpSCP::storeSCP(
 	}
 
 	OFString temp_str;
-	OFLOG_INFO(movescuLogger, "Received Store Request: MsgID " << req->MessageID << ", ("
+	DCMNET_INFO( "Received Store Request: MsgID " << req->MessageID << ", ("
 		<< dcmSOPClassUIDToModality(req->AffectedSOPClassUID, "OT") << ")");
-	OFLOG_DEBUG(movescuLogger, DIMSE_dumpMessage(temp_str, *req, DIMSE_INCOMING, NULL, presID));
+	DCMNET_DEBUG( DIMSE_dumpMessage(temp_str, *req, DIMSE_INCOMING, NULL, presID));
 
-	StoreCallbackData callbackData;
-	callbackData.assoc = assoc;
-	callbackData.imageFileName = imageFileName;
+
+	//StoreCallbackData callbackData;
+	//callbackData.assoc = assoc;
+	//callbackData.imageFileName = imageFileName;
+	//DcmFileFormat dcmff;
+	//callbackData.dcmff = &dcmff;
+
+
+	// for test
+	CMoveExecuteSCUSubOpStoreSCPCallback * callbackData = NULL;
+
+	/* prepare the callback data */
 	DcmFileFormat dcmff;
-	callbackData.dcmff = &dcmff;
+	CMoveExecuteSCUSubOpStoreSCPDefaultCallback defaultCallback;
+	if (callbackData == NULL) callbackData = &defaultCallback;
+	callbackData->setAssociation(assoc);
+	callbackData->setDcmFileFormat(&dcmff);
+	callbackData->setImageFileName(imageFileName);
 
 	// store SourceApplicationEntityTitle in metaheader
 	if (assoc && assoc->params)
@@ -462,7 +524,7 @@ OFCondition CMoveSCUSubOpSCP::storeSCP(
 
 	if (cond.bad())
 	{
-		OFLOG_ERROR(movescuLogger, "Store SCP Failed: " << DimseCondition::dump(temp_str, cond));
+		DCMNET_ERROR( "Store SCP Failed: " << DimseCondition::dump(temp_str, cond));
 		/* remove file */
 		if (!opt_ignore)
 		{

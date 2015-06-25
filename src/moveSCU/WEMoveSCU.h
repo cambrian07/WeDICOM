@@ -76,7 +76,15 @@ private:
 
 // private function
 private:
-	int PerformQuery(const char * strIP, int nPort, const char * strCallingAE, const char * strCalledAE, OFList<DcmDataset> & vecDataset, OFList<OFString> & vecTagValue, const char* strQueryLevel = "STUDY");
+	int PerformRetrieve(const char * strIP, 
+	                    int nPort, 
+		                const char * strCallingAE,
+	                	const char * strCalledAE, 
+	                	const char * strDestdAE, 
+		                OFList<DcmDataset> & vecDataset,
+	                	OFList<OFString> & vecTagValue,
+	                	const char* strRetrieveLevel = "STUDY"
+		                );
 
 	bool InitLog4Cplus();
 
@@ -86,10 +94,11 @@ private:
 public:
 	virtual void	SetEventHandler(IWEMoveSCUEventHandler * pEventHandler);
 
-	virtual bool	SendQuery(const char* pszIP,
+	virtual bool	SendRetireve(const char* pszIP,
 		                      int nPort,
 							  const char* pszCallingAE,
 							  const char* pszCalledAE,
+		                      const char* pszDestAE,
 							  const char* pszSearchMask
 							  );
 

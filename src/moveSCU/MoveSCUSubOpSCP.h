@@ -33,7 +33,11 @@ public:
 	*  before the callback object is used.
 	*  @param assoc pointer to current association
 	*/
-	//void setAssociation(T_ASC_Association *assoc);
+	void setAssociation(T_ASC_Association * pAssoc);
+
+	void setDcmFileFormat(DcmFileFormat * pDcmff);
+
+	void setImageFileName(const char * strImageFileName);
 
 	/** assigns a value to member variable presId_. Used by FindSCU code
 	*  (class CMoveExecuteSCU) to store the current presentation context ID
@@ -49,7 +53,7 @@ protected: /* the two member variables are protected and can be accessed from de
 
 		   /// current presentation context ID. Will contain valid value when callback() is called.
 		   //T_ASC_PresentationContextID presId_;
-	char* imageFileName;
+	OFString imageFileName;
 	DcmFileFormat* dcmff;
 	T_ASC_Association* assoc;
 
@@ -103,6 +107,28 @@ protected: /* the two member variables are protected and can be accessed from de
 
 		   /// current presentation context ID. Will contain valid value when callback() is called.
 		   //T_ASC_PresentationContextID presId_;
+
+
+
+	OFBool	opt_abortDuringStore;
+	OFBool	opt_abortAfterStore;
+	OFCmdUnsignedInt	opt_sleepDuring;
+	OFBool	opt_bitPreserving;
+	OFBool	opt_ignore;
+	OFString	opt_outputDirectory;
+	E_TransferSyntax	opt_writeTransferSyntax;
+	E_EncodingType	opt_sequenceType;
+	E_GrpLenEncoding	opt_groupLength;
+	E_PaddingEncoding	opt_paddingType;
+	OFBool	opt_useMetaheader;
+	OFCmdUnsignedInt	opt_filepad;
+	OFCmdUnsignedInt	opt_itempad;
+	OFBool	opt_correctUIDPadding;
+
+
+
+
+
 };
 
 
@@ -125,6 +151,20 @@ public:
 	OFCondition storeSCP(T_ASC_Association *assoc,T_DIMSE_Message *msg,T_ASC_PresentationContextID presID);
 
 private:
+
+	T_DIMSE_BlockingMode	opt_blockMode;
+	int	opt_dimse_timeout;
+	OFBool	opt_acceptAllXfers;
+	E_TransferSyntax	opt_in_networkTransferSyntax;
+	OFCmdUnsignedInt	opt_maxPDU;
+	OFBool	opt_ignore;
+	OFCmdUnsignedInt	opt_sleepAfter;
+	OFBool	opt_useMetaheader;
+	OFBool	opt_bitPreserving;
+	OFCmdUnsignedInt	opt_sleepDuring;
+
+
+
 
 
 };

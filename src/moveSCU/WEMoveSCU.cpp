@@ -103,8 +103,7 @@ CWEMoveSCU::~CWEMoveSCU(void)
 {
 }
 
-
-int CWEMoveSCU::PerformQuery(const char * strIP, int nPort, const char * strCallingAE, const char * strCalledAE, OFList<DcmDataset> & vecDataset, OFList<OFString> & vecTagValue, const char* strQueryLevel /*= "STUDY"*/)
+int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strCallingAE, const char * strCalledAE, const char * strDestdAE, OFList<DcmDataset>& vecDataset, OFList<OFString>& vecTagValue, const char * strRetrieveLevel)
 {
 	OFList<OFString>      fileNameList;
 	OFBool                opt_abortAssociation = OFFalse;
@@ -167,18 +166,18 @@ int CWEMoveSCU::PerformQuery(const char * strIP, int nPort, const char * strCall
 		//opt_abstractSyntax = UID_FINDPatientRootQueryRetrieveInformationModel;
 		//opt_abstractSyntax = UID_FINDStudyRootQueryRetrieveInformationModel;
 		//opt_abstractSyntax = UID_RETIRED_FINDPatientStudyOnlyQueryRetrieveInformationModel;
-		OFString strModel(strQueryLevel);
+		OFString strModel(strRetrieveLevel);
 		if (strModel.compare("STUDY") == 0)
 		{
-			opt_abstractSyntax = UID_FINDStudyRootQueryRetrieveInformationModel;
+			opt_abstractSyntax = UID_MOVEStudyRootQueryRetrieveInformationModel;
 		}
 		if (strModel.compare("PATIENT") == 0)
 		{
-			opt_abstractSyntax = UID_FINDPatientRootQueryRetrieveInformationModel;
+			opt_abstractSyntax = UID_MOVEPatientRootQueryRetrieveInformationModel;
 		}
 		else
 		{
-			opt_abstractSyntax = UID_FINDModalityWorklistInformationModel;
+			opt_abstractSyntax = UID_MOVEStudyRootQueryRetrieveInformationModel;
 		}
 
 
@@ -438,11 +437,11 @@ void CWEMoveSCU::SetEventHandler(IWEMoveSCUEventHandler * pEventHandler)
 }
 
 
-
-bool CWEMoveSCU::SendQuery(const char* pszIP,
+bool CWEMoveSCU::SendRetireve(const char* pszIP,
                   int nPort,
 				  const char* pszCallingAE,
 				  const char* pszCalledAE,
+				  const char* pszDestAE,
 				  const char* pszSearchMask
 				  )
 {
@@ -469,7 +468,7 @@ bool CWEMoveSCU::SendQuery(const char* pszIP,
 		return false;
 	}
 
-	PerformQuery(pszIP, nPort, pszCallingAE, pszCalledAE, datasetList, tagList, strQueryLevel.c_str());
+	PerformRetrieve(pszIP, nPort, pszCallingAE, pszCalledAE, pszDestAE, datasetList, tagList, strQueryLevel.c_str());
 	return true;
 }
 
