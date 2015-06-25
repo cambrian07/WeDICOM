@@ -60,6 +60,9 @@
     <ClCompile Include="..\src\moveSCU\WEMoveSCU.cpp">
       <Filter>moveSCU</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\moveSCU\MoveSCUSubOpSCP.cpp">
+      <Filter>moveSCU</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -81,6 +84,9 @@
       <Filter>moveSCU</Filter>
     </ClInclude>
     <ClInclude Include="..\src\moveSCU\WEMoveSCU.h">
+      <Filter>moveSCU</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\moveSCU\MoveSCUSubOpSCP.h">
       <Filter>moveSCU</Filter>
     </ClInclude>
   </ItemGroup>

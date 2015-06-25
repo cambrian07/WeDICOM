@@ -94,7 +94,7 @@ void main()
 	CWEFindSCU findSCU;
 	findSCU.SetEventHandler(eventHandler);
 	//findSCU.SendQuery("192.168.1.108", 1004, "FINDSCU", "SVPACS", "aaa");
-	findSCU.SendQuery("127.0.0.1", 1004, "FINDSCU", "SVPACS", strDcmJson.c_str());
+	findSCU.SendQuery("127.0.0.1", 1004, "WEPACS", "DCMQRSCP", strDcmJson.c_str());
 
 	return ;
 }

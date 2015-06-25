@@ -131,6 +131,7 @@
     <ClCompile Include="..\src\findSCU\WEFindSCU.cpp" />
     <ClCompile Include="..\src\logger\WEAppender.cpp" />
     <ClCompile Include="..\src\moveSCU\MoveExecuteSCU.cpp" />
+    <ClCompile Include="..\src\moveSCU\MoveSCUSubOpSCP.cpp" />
     <ClCompile Include="..\src\moveSCU\WEMoveSCU.cpp" />
     <ClCompile Include="WeDICOM.cpp" />
   </ItemGroup>
@@ -143,6 +144,7 @@
     <ClInclude Include="..\src\findSCU\WEFindSCU.h" />
     <ClInclude Include="..\src\logger\WEAppender.h" />
     <ClInclude Include="..\src\moveSCU\MoveExecuteSCU.h" />
+    <ClInclude Include="..\src\moveSCU\MoveSCUSubOpSCP.h" />
     <ClInclude Include="..\src\moveSCU\WEMoveSCU.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
