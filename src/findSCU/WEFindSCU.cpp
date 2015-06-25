@@ -4,18 +4,6 @@
 
 #include "json/json.h"
 
-#define OFFIS_CONSOLE_FINDSCU "findscu"
-
-static OFLogger findscuLogger = OFLog::getLogger("dcmtk.apps." OFFIS_CONSOLE_FINDSCU );
-
-/* default application titles */
-#define APPLICATIONTITLE        "FINDSCU"
-#define PEERAPPLICATIONTITLE    "ANY-SCP"
-
-#define SHORTCOL 4
-#define LONGCOL 19
-
-
 /* ---------------- class CWEFindSCUCallback ---------------- */
 
 CWEFindSCUCallback::CWEFindSCUCallback(int cancelAfterNResponses)
@@ -88,7 +76,7 @@ void CWEFindSCUCallback::callback(
 CWEFindSCU::CWEFindSCU(void)
 	:m_pEventHandler(NULL)
 	,m_Callback(-1)
-	,m_findSCULogger( OFLog::getLogger("dcmtk.apps." "findSCU"))
+	,m_findSCULogger( OFLog::getLogger("WePACS.apps." "findSCU"))
 {
 	//=================================================================================
 	// 这个地方要对Appender进行操作
@@ -116,9 +104,9 @@ int CWEFindSCU::PerformQuery(const char * strIP, int nPort, const char * strCall
 	OFBool                opt_extractResponsesToFile = OFFalse;
 	OFCmdUnsignedInt      opt_maxReceivePDULength = ASC_DEFAULTMAXPDU;
 	E_TransferSyntax      opt_networkTransferSyntax = EXS_Unknown;
-	const char *          opt_ourTitle = APPLICATIONTITLE;
+	const char *          opt_ourTitle = "";
 	const char *          opt_peer;
-	const char *          opt_peerTitle = PEERAPPLICATIONTITLE;
+	const char *          opt_peerTitle = "";
 	OFCmdUnsignedInt      opt_port = 104;
 	OFCmdUnsignedInt      opt_repeatCount = 1;
 	OFBool                opt_secureConnection = OFFalse; /* default: no secure connection */
@@ -264,7 +252,7 @@ int CWEFindSCU::PerformQuery(const char * strIP, int nPort, const char * strCall
 	/* make sure data dictionary is loaded */
 	if (!dcmDataDict.isDictionaryLoaded())
 	{
-		OFLOG_WARN(findscuLogger, "no data dictionary loaded, check environment variable: "
+		OFLOG_WARN(m_findSCULogger, "no data dictionary loaded, check environment variable: "
 			<< DCM_DICT_ENVIRONMENT_VARIABLE);
 	}
 
@@ -272,7 +260,7 @@ int CWEFindSCU::PerformQuery(const char * strIP, int nPort, const char * strCall
 	CFndExecuteSCU findscu;
 	OFCondition cond = findscu.initializeNetwork(opt_acse_timeout);
 	if (cond.bad()) {
-		OFLOG_ERROR(findscuLogger, DimseCondition::dump(temp_str, cond));
+		OFLOG_ERROR(m_findSCULogger, DimseCondition::dump(temp_str, cond));
 		return 1;
 	}
 
@@ -351,14 +339,14 @@ int CWEFindSCU::PerformQuery(const char * strIP, int nPort, const char * strCall
 
 	if (cond.bad())
 	{
-		OFLOG_ERROR(findscuLogger, DimseCondition::dump(temp_str, cond));
+		OFLOG_ERROR(m_findSCULogger, DimseCondition::dump(temp_str, cond));
 	}
 
 	// destroy network structure
 	cond = findscu.dropNetwork();
 	if (cond.bad()) 
 	{
-		OFLOG_ERROR(findscuLogger, DimseCondition::dump(temp_str, cond));
+		OFLOG_ERROR(m_findSCULogger, DimseCondition::dump(temp_str, cond));
 	}
 
 	WSACleanup();

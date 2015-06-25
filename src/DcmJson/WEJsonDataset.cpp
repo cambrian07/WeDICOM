@@ -52,7 +52,6 @@ OFCondition CWEJsonDataset::writeJson(OFString & strJson)
 	return EC_Normal;
 
 
-	return false;
 }
 
 OFCondition CWEJsonDataset::LoadfromJson(const OFString & strJson)

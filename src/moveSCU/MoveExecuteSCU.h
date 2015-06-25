@@ -16,6 +16,27 @@ struct T_ASC_Parameters;
 struct T_DIMSE_C_MoveRQ;
 struct T_DIMSE_C_MoveRSP;
 
+enum QueryModel{
+	QMPatientRoot = 0,
+	QMStudyRoot = 1,
+	QMPatientStudyOnly = 2
+} ;
+
+struct QuerySyntax{
+	const char *findSyntax;
+	const char *moveSyntax;
+};
+
+static QuerySyntax querySyntax[3] = {
+	{ UID_FINDPatientRootQueryRetrieveInformationModel,
+	UID_MOVEPatientRootQueryRetrieveInformationModel },
+	{ UID_FINDStudyRootQueryRetrieveInformationModel,
+	UID_MOVEStudyRootQueryRetrieveInformationModel },
+	{ UID_RETIRED_FINDPatientStudyOnlyQueryRetrieveInformationModel,
+	UID_RETIRED_MOVEPatientStudyOnlyQueryRetrieveInformationModel }
+};
+
+
 /** Abstract base class for Find SCU callbacks. During a C-FIND operation, the 
 *  callback() method of a callback handler object derived from this class is 
 *  called once for each incoming C-FIND-RSP message. The callback method has 
@@ -225,15 +246,11 @@ public:
 
 	void substituteOverrideKeys(DcmDataset *dset);
 
-	OFCondition moveSCU(T_ASC_Association * assoc, const char *fname);
+	OFCondition moveSCU(T_ASC_Association * assoc, DcmDataset* dataset);
 
-	OFCondition	cmove(T_ASC_Association * assoc, const char *fname);
+	OFCondition	cmove(T_ASC_Association * assoc, DcmDataset* dataset);
 
-	OFCondition sendRequest();
-
-
-	// callback
-
+	OFCondition	cmove(T_ASC_Association * assoc, const char* fname);
 
 
 	/** main worker method that negotiates an association, executes one or more
@@ -276,21 +293,24 @@ public:
 	*  @return EC_Normal if successful, an error code otherwise
 	*/
 	OFCondition performRetrieve(
-		const char *peer,
+		const char * peer,
 		unsigned int port,
-		const char *ourTitle,
-		const char *peerTitle,
-		const char *abstractSyntax,
+		const char * ourTitle,
+		const char * peerTitle,
+		const char * abstractSyntax,
+		unsigned int retrievePort,
+		const char * moveDestination,
+		const char * outputDirectory,
 		E_TransferSyntax preferredTransferSyntax,
 		T_DIMSE_BlockingMode blockMode,
 		int dimse_timeout,
 		Uint32 maxReceivePDULength,
-		OFBool secureConnection,
+		QueryModel queryModel,
 		OFBool abortAssociation,
 		unsigned int repeatCount,
 		int cancelAfterNResponses,
-		OFList<OFString> *overrideKeys,
-		CMoveExecuteSCUCallback *callback = NULL,
+		DcmDataset* pOverrideKeys = NULL,
+		CMoveExecuteSCUCallback * callback  = NULL,
 		OFList<OFString> *fileNameList = NULL);
 
 	// dataset
@@ -333,61 +353,38 @@ public:
 	*    This parameter, if non-NULL, points to a list of filenames (paths).
 	*  @return EC_Normal if successful, an error code otherwise
 	*/
-	OFCondition performRetrievebyDataset(
-		const char *peer,
+	OFCondition CMoveExecuteSCU::performRetrieve(
+		const char * peer,
 		unsigned int port,
-		const char *ourTitle,
-		const char *peerTitle,
-		const char *abstractSyntax,
+		const char * ourTitle,
+		const char * peerTitle,
+		const char * abstractSyntax,
+		unsigned int retrievePort,
+		const char * moveDestination,
+		const char * outputDirectory,
 		E_TransferSyntax preferredTransferSyntax,
 		T_DIMSE_BlockingMode blockMode,
 		int dimse_timeout,
 		Uint32 maxReceivePDULength,
-		OFBool secureConnection,
+		QueryModel queryModel,
 		OFBool abortAssociation,
 		unsigned int repeatCount,
 		int cancelAfterNResponses,
-		OFList<OFString> *overrideKeys,
-		CMoveExecuteSCUCallback*callback = NULL,
-		OFList<DcmDataset> *datasetList = NULL);
-
-
-
-public:
-	/** initialize the network structure. This should be done only once.
-	*  @param acse_timeout timeout for ACSE operations, in seconds
-	*  @return EC_Normal if successful, an error code otherwise
-	*/
-	OFCondition initializeNetwork(int acse_timeout);
-
-	/** enable user-defined transport layer. This method is needed when
-	*  the network association should use a non-default transport layer
-	*  (e.g. a TLS connection). In this case a fully initialized transport
-	*  layer object must be passed with this call after a call to 
-	*  initializeNetwork, but prior to any call to performQuery.
-	*  The transport layer object will not be deleted by this class and
-	*  must remain alive until this object is deleted or a new transport
-	*  layer is set.
-	*  @param tLayer pointer to transport layer object
-	*  @return EC_Normal if successful, an error code otherwise
-	*/
-	OFCondition setTransportLayer(DcmTransportLayer *tLayer);
-
-	/** destroy network struct. This should be done only once.
-	*  @return EC_Normal if successful, an error code otherwise
-	*/
-	OFCondition dropNetwork();
-
+		DcmDataset* pOverrideKeys = NULL,
+		CMoveExecuteSCUCallback * callback  = NULL,
+		OFList<DcmDataset>* datasetList = NULL);
 
 
 
 private:
 
+	OFCmdUnsignedInt	opt_retrievePort;
+	OFString	opt_outputDirectory;
+	int	opt_acse_timeout;
+	OFCmdUnsignedInt	opt_maxPDU;
 
-
-
-private:
-
+	OFBool	opt_abortAssociation;
+	QueryModel	opt_queryModel;
 
 	DcmDataset * overrideKeys;
 	E_TransferSyntax	opt_out_networkTransferSyntax;
@@ -400,13 +397,10 @@ private:
 	T_ASC_Network *	net;
 
 
-	//querySyntax;
-	//opt_queryModel;
 
-	OFString opt_moveAbstractSyntax;
+private:
 
-
-
+	CMoveExecuteSCUCallback* m_pCallback;
 
 
 };

@@ -47,7 +47,7 @@ void CMoveExecuteSCUCallback::setPresentationContextID(T_ASC_PresentationContext
 	presId_ = presId;
 }
 
-/* ---------------- class CFndExecuteSCUDefaultCallback ---------------- */
+/* ---------------- class CMoveExecuteSCUDefaultCallback ---------------- */
 
 CMoveExecuteSCUDefaultCallback::CMoveExecuteSCUDefaultCallback(
 	int cancelAfterNResponses)
@@ -125,15 +125,20 @@ CMoveExecuteSCU::CMoveExecuteSCU()
 	opt_ignorePendingDatasets(OFTrue),
 	net(NULL), /* the global DICOM network */
 	overrideKeys(NULL),
-	opt_moveAbstractSyntax(UID_MOVEPatientRootQueryRetrieveInformationModel)
+	opt_maxPDU(ASC_DEFAULTMAXPDU),
+	opt_retrievePort(0),
+	opt_abortAssociation(OFFalse),
+	opt_queryModel(QMPatientRoot),
+	opt_acse_timeout(30),
+	opt_outputDirectory("."),
+	m_pCallback(NULL)
 
 {
 
-	//opt_moveAbstractSyntax = UID_MOVEPatientRootQueryRetrieveInformationModel;
-	//opt_moveAbstractSyntax = UID_MOVEStudyRootQueryRetrieveInformationModel;
-	//opt_moveAbstractSyntax = UID_RETIRED_MOVEPatientStudyOnlyQueryRetrieveInformationModel ;
+	//opt_queryModel = QMPatientRoot;
+	//opt_queryModel = QMStudyRoot;
+	//opt_queryModel = QMPatientStudyOnly;
 
-		
 }
 
 CMoveExecuteSCU::~CMoveExecuteSCU()
@@ -298,7 +303,7 @@ void CMoveExecuteSCU::substituteOverrideKeys(DcmDataset *dset)
 
 
 
-OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, const char *fname)
+OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, DcmDataset* dataset)
 {
 	T_ASC_PresentationContextID presId;
 	T_DIMSE_C_MoveRQ    req;
@@ -308,20 +313,20 @@ OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, const char *fnam
 	const char          *sopClass;
 	DcmDataset          *statusDetail = NULL;
 
-	DcmFileFormat dcmff;
+	//DcmFileFormat dcmff;
 
-	if (fname != NULL) {
-		if (dcmff.loadFile(fname).bad()) {
-			DCMNET_ERROR( "bad DICOM file: " << fname << ": " << dcmff.error().text());
-			return DIMSE_BADDATA;
-		}
-	}
+	//if (fname != NULL) {
+	//	if (dcmff.loadFile(fname).bad()) {
+	//		DCMNET_ERROR( "bad DICOM file: " << fname << ": " << dcmff.error().text());
+	//		return DIMSE_BADDATA;
+	//	}
+	//}
 
 	/* replace specific keys by those in overrideKeys */
-	substituteOverrideKeys(dcmff.getDataset());
+	//substituteOverrideKeys(dcmff.getDataset());
+	substituteOverrideKeys(dataset);
 
-	//sopClass = querySyntax[opt_queryModel].moveSyntax;
-	sopClass = opt_moveAbstractSyntax.c_str();
+	sopClass = querySyntax[opt_queryModel].moveSyntax;
 
 	/* which presentation context should be used */
 	presId = ASC_findAcceptedPresentationContextID(assoc, sopClass);
@@ -330,20 +335,21 @@ OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, const char *fnam
 	//if (movescuLogger.isEnabledFor(OFLogger::INFO_LOG_LEVEL))
 	{
 		DCMNET_INFO( "Sending Move Request: MsgID " << msgId);
-		DCMNET_INFO( "Request:" << OFendl << DcmObject::PrintHelper(*dcmff.getDataset()));
+		//DCMNET_INFO( "Request:" << OFendl << DcmObject::PrintHelper(*dcmff.getDataset()));
+		DCMNET_INFO( "Request:" << OFendl << DcmObject::PrintHelper(*dataset));
 	}
 
 	//callbackData.assoc = assoc;
 	//callbackData.presId = presId;
 
 	// for test
-	CMoveExecuteSCUCallback* callback = NULL;
+	//CMoveExecuteSCUCallback* callback = NULL;
 
 	/* prepare the callback data */
 	CMoveExecuteSCUDefaultCallback defaultCallback(opt_cancelAfterNResponses);
-	if (callback == NULL) callback = &defaultCallback;
-	callback->setAssociation(assoc);
-	callback->setPresentationContextID(presId);
+	if (m_pCallback == NULL) m_pCallback = &defaultCallback;
+	m_pCallback->setAssociation(assoc);
+	m_pCallback->setPresentationContextID(presId);
 
 	req.MessageID = msgId;
 	strcpy(req.AffectedSOPClassUID, sopClass);
@@ -358,8 +364,8 @@ OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, const char *fnam
 		strcpy(req.MoveDestination, opt_moveDestination);
 	}
 
-	OFCondition cond = DIMSE_moveUser(assoc, presId, &req, dcmff.getDataset(),
-		moveCallback, &callback, opt_blockMode, opt_dimse_timeout, net, subOpCallback,
+	OFCondition cond = DIMSE_moveUser(assoc, presId, &req, dataset,
+		moveCallback, &m_pCallback, opt_blockMode, opt_dimse_timeout, net, subOpCallback,
 		NULL, &rsp, &statusDetail, &rspIds, opt_ignorePendingDatasets);
 
 	if (cond == EC_Normal) {
@@ -384,31 +390,506 @@ OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, const char *fnam
 }
 
 
-OFCondition CMoveExecuteSCU::cmove(T_ASC_Association * assoc, const char *fname)
+OFCondition CMoveExecuteSCU::cmove(T_ASC_Association * assoc, DcmDataset* dataset)
 {
 	OFCondition cond = EC_Normal;
 	int n = OFstatic_cast(int, opt_repeatCount);
 	while (cond.good() && n--)
-		cond = moveSCU(assoc, fname);
+		cond = moveSCU(assoc, dataset);
 	return cond;
 }
 
-OFCondition CMoveExecuteSCU::sendRequest()
+OFCondition CMoveExecuteSCU::cmove(T_ASC_Association * assoc, const char * fname)
 {
+	OFCondition cond = EC_Normal;
+	DcmFileFormat dcmff;
 
+	if (fname != NULL) {
+		if (dcmff.loadFile(fname).bad()) {
+			DCMNET_ERROR( "bad DICOM file: " << fname << ": " << dcmff.error().text());
+			return DIMSE_BADDATA;
+		}
+	}
 
+	int n = OFstatic_cast(int, opt_repeatCount);
+	while (cond.good() && n--)
+		cond = moveSCU(assoc, dcmff.getDataset());
+	return cond;
 
-
-	return OFCondition();
 }
 
-OFCondition CMoveExecuteSCU::performRetrieve(const char * peer, unsigned int port, const char * ourTitle, const char * peerTitle, const char * abstractSyntax, E_TransferSyntax preferredTransferSyntax, T_DIMSE_BlockingMode blockMode, int dimse_timeout, Uint32 maxReceivePDULength, OFBool secureConnection, OFBool abortAssociation, unsigned int repeatCount, int cancelAfterNResponses, OFList<OFString>* overrideKeys, CMoveExecuteSCUCallback * callback, OFList<OFString>* fileNameList)
+
+OFCondition CMoveExecuteSCU::performRetrieve(const char * peer, 
+	                                         unsigned int port,
+	                                         const char * ourTitle,
+	                                         const char * peerTitle,
+	                                         const char * abstractSyntax,
+	                                         unsigned int retrievePort,
+	                                         const char * moveDestination,
+	                                         const char * outputDirectory,
+	                                         E_TransferSyntax preferredTransferSyntax,
+	                                         T_DIMSE_BlockingMode blockMode, 
+	                                         int dimse_timeout, 
+	                                         Uint32 maxReceivePDULength,
+	                                         QueryModel queryModel,
+	                                         OFBool abortAssociation,
+	                                         unsigned int repeatCount, 
+	                                         int cancelAfterNResponses,
+	                                         DcmDataset* pOverrideKeys/* = NULL*/,
+	                                         CMoveExecuteSCUCallback * callback /* = NULL*/,
+	                                         OFList<OFString>* fileNameList/* = NULL*/)
 {
-	return OFCondition();
+
+	OFString temp_str;
+
+	T_ASC_Parameters *params = NULL;
+	const char *opt_peer;
+	OFCmdUnsignedInt opt_port = 104;
+	DIC_NODENAME localHost;
+	DIC_NODENAME peerHost;
+	T_ASC_Association *assoc = NULL;
+	const char *opt_peerTitle = "QRSCP";
+	const char *opt_ourTitle = "WEPACS";
+
+	opt_peer = peer;
+	opt_port = port;
+	opt_peerTitle = peerTitle;
+	opt_ourTitle = ourTitle;
+
+
+	opt_retrievePort = retrievePort;
+	opt_moveDestination = moveDestination;
+	opt_outputDirectory = outputDirectory;
+	opt_maxPDU = maxReceivePDULength;
+
+	opt_abortAssociation = abortAssociation;
+	opt_queryModel = queryModel;
+
+	overrideKeys = pOverrideKeys;
+
+	opt_out_networkTransferSyntax = preferredTransferSyntax;
+	opt_cancelAfterNResponses = cancelAfterNResponses;
+	opt_blockMode = blockMode;
+	opt_dimse_timeout = dimse_timeout;
+	opt_repeatCount = repeatCount;
+
+	m_pCallback = callback;
+
+
+	/* print resource identifier */
+	//DCMNET_DEBUG( rcsid << OFendl);
+
+	/* make sure data dictionary is loaded */
+	if (!dcmDataDict.isDictionaryLoaded())
+	{
+		DCMNET_WARN("no data dictionary loaded, check environment variable: "
+			<< DCM_DICT_ENVIRONMENT_VARIABLE);
+	}
+
+	/* make sure output directory exists and is writeable */
+	if (opt_retrievePort > 0)
+	{
+		if (!OFStandard::dirExists(opt_outputDirectory))
+		{
+			DCMNET_FATAL("specified output directory does not exist");
+
+			return EC_CorruptedData;
+		}
+		else if (!OFStandard::isWriteable(opt_outputDirectory))
+		{
+			DCMNET_FATAL("specified output directory is not writeable");
+			return EC_CorruptedData;
+		}
+	}
+
+
+
+	/* network for move request and responses */
+	T_ASC_NetworkRole role = (opt_retrievePort > 0) ? NET_ACCEPTORREQUESTOR : NET_REQUESTOR;
+	OFCondition cond = ASC_initializeNetwork(role, OFstatic_cast(int, opt_retrievePort), opt_acse_timeout, &net);
+	if (cond.bad())
+	{
+		DCMNET_FATAL("cannot create network: " << DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+
+
+
+	/* set up main association */
+	cond = ASC_createAssociationParameters(&params, opt_maxPDU);
+	if (cond.bad()) {
+		DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+	ASC_setAPTitles(params, opt_ourTitle, opt_peerTitle, NULL);
+
+	gethostname(localHost, sizeof(localHost) - 1);
+	sprintf(peerHost, "%s:%d", opt_peer, OFstatic_cast(int, opt_port));
+	ASC_setPresentationAddresses(params, localHost, peerHost);
+
+	/*
+	* We also add a presentation context for the corresponding
+	* find sop class.
+	*/
+	cond = addPresentationContext(params, 1,
+		querySyntax[opt_queryModel].findSyntax);
+
+	cond = addPresentationContext(params, 3,
+		querySyntax[opt_queryModel].moveSyntax);
+
+	if (cond.bad()) {
+		DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+
+	DCMNET_DEBUG("Request Parameters:" << OFendl << ASC_dumpParameters(temp_str, params, ASC_ASSOC_RQ));
+
+	/* create association */
+	DCMNET_INFO("Requesting Association");
+	cond = ASC_requestAssociation(net, params, &assoc);
+	if (cond.bad()) {
+		if (cond == DUL_ASSOCIATIONREJECTED) {
+			T_ASC_RejectParameters rej;
+
+			ASC_getRejectParameters(params, &rej);
+			DCMNET_FATAL("Association Rejected:");
+			DCMNET_FATAL(ASC_printRejectParameters(temp_str, &rej));
+		}
+		else {
+			DCMNET_FATAL("Association Request Failed:");
+			DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+			return EC_CorruptedData;
+		}
+	}
+	/* what has been accepted/refused ? */
+	DCMNET_DEBUG("Association Parameters Negotiated:" << OFendl << ASC_dumpParameters(temp_str, params, ASC_ASSOC_AC));
+
+	if (ASC_countAcceptedPresentationContexts(params) == 0) {
+		DCMNET_FATAL("No Acceptable Presentation Contexts");
+		return EC_CorruptedData;
+	}
+
+	DCMNET_INFO("Association Accepted (Max Send PDV: " << assoc->sendPDVLength << ")");
+
+	/* do the real work */
+	cond = EC_Normal;
+	if (fileNameList == NULL)
+	{
+		/* no files provided on command line */
+		cond = cmove(assoc, "");
+	}
+	else {
+		OFListIterator(OFString) iter = fileNameList->begin();
+		OFListIterator(OFString) enditer = fileNameList->end();
+		while ((iter != enditer) && cond.good())
+		{
+			cond = cmove(assoc, (*iter).c_str());
+			++iter;
+		}
+	}
+
+	/* tear down association */
+	if (cond == EC_Normal)
+	{
+		if (opt_abortAssociation) {
+			DCMNET_INFO("Aborting Association");
+			cond = ASC_abortAssociation(assoc);
+			if (cond.bad()) {
+				DCMNET_FATAL("Association Abort Failed: " << DimseCondition::dump(temp_str, cond));
+				return EC_CorruptedData;
+			}
+		}
+		else {
+			/* release association */
+			DCMNET_INFO("Releasing Association");
+			cond = ASC_releaseAssociation(assoc);
+			if (cond.bad())
+			{
+				DCMNET_FATAL("Association Release Failed:");
+				DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+				return EC_CorruptedData;
+			}
+		}
+	}
+	else if (cond == DUL_PEERREQUESTEDRELEASE)
+	{
+		DCMNET_ERROR("Protocol Error: Peer requested release (Aborting)");
+		DCMNET_INFO("Aborting Association");
+		cond = ASC_abortAssociation(assoc);
+		if (cond.bad()) {
+			DCMNET_FATAL("Association Abort Failed: " << DimseCondition::dump(temp_str, cond));
+			return EC_CorruptedData;
+		}
+	}
+	else if (cond == DUL_PEERABORTEDASSOCIATION)
+	{
+		DCMNET_INFO("Peer Aborted Association");
+	}
+	else
+	{
+		DCMNET_ERROR("Move SCU Failed: " << DimseCondition::dump(temp_str, cond));
+		DCMNET_INFO("Aborting Association");
+		cond = ASC_abortAssociation(assoc);
+		if (cond.bad()) {
+			DCMNET_FATAL("Association Abort Failed: " << DimseCondition::dump(temp_str, cond));
+			return EC_CorruptedData;
+		}
+	}
+
+	cond = ASC_destroyAssociation(&assoc);
+	if (cond.bad()) {
+		DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+	cond = ASC_dropNetwork(&net);
+	if (cond.bad()) {
+		DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+
+#ifdef HAVE_WINSOCK_H
+	WSACleanup();
+#endif
+
+	return EC_Normal;
+
+
 }
 
-OFCondition CMoveExecuteSCU::performRetrievebyDataset(const char * peer, unsigned int port, const char * ourTitle, const char * peerTitle, const char * abstractSyntax, E_TransferSyntax preferredTransferSyntax, T_DIMSE_BlockingMode blockMode, int dimse_timeout, Uint32 maxReceivePDULength, OFBool secureConnection, OFBool abortAssociation, unsigned int repeatCount, int cancelAfterNResponses, OFList<OFString>* overrideKeys, CMoveExecuteSCUCallback * callback, OFList<DcmDataset>* datasetList)
+
+OFCondition CMoveExecuteSCU::performRetrieve(const char * peer,
+	unsigned int port,
+	const char * ourTitle,
+	const char * peerTitle,
+	const char * abstractSyntax,
+	unsigned int retrievePort,
+	const char * moveDestination,
+	const char * outputDirectory,
+	E_TransferSyntax preferredTransferSyntax,
+	T_DIMSE_BlockingMode blockMode,
+	int dimse_timeout,
+	Uint32 maxReceivePDULength,
+	QueryModel queryModel,
+	OFBool abortAssociation,
+	unsigned int repeatCount,
+	int cancelAfterNResponses,
+	DcmDataset* pOverrideKeys/* = NULL*/,
+	CMoveExecuteSCUCallback * callback /* = NULL*/,
+	OFList<DcmDataset>* datasetList/* = NULL*/)
 {
-	return OFCondition();
+
+	OFString temp_str;
+
+	T_ASC_Parameters *params = NULL;
+	const char *opt_peer;
+	OFCmdUnsignedInt opt_port = 104;
+	DIC_NODENAME localHost;
+	DIC_NODENAME peerHost;
+	T_ASC_Association *assoc = NULL;
+	const char *opt_peerTitle = "QRSCP";
+	const char *opt_ourTitle = "WEPACS";
+	//OFList<OFString>* fileNameList = NULL;
+	//OFList<DcmDataset>* datasetList;
+
+	opt_peer = peer;
+	opt_port = port;
+	opt_peerTitle = peerTitle;
+	opt_ourTitle = ourTitle;
+
+	opt_retrievePort = retrievePort;
+	opt_moveDestination = moveDestination;
+	opt_outputDirectory = outputDirectory;
+	opt_maxPDU = maxReceivePDULength;
+
+	opt_abortAssociation = abortAssociation;
+	opt_queryModel = queryModel;
+
+	overrideKeys = pOverrideKeys;
+
+	opt_out_networkTransferSyntax = preferredTransferSyntax;
+	opt_cancelAfterNResponses = cancelAfterNResponses;
+	opt_blockMode = blockMode;
+	opt_dimse_timeout = dimse_timeout;
+	opt_repeatCount = repeatCount;
+
+
+	m_pCallback = callback;
+
+	/* print resource identifier */
+	//DCMNET_DEBUG( rcsid << OFendl);
+
+	/* make sure data dictionary is loaded */
+	if (!dcmDataDict.isDictionaryLoaded())
+	{
+		DCMNET_WARN("no data dictionary loaded, check environment variable: "
+			<< DCM_DICT_ENVIRONMENT_VARIABLE);
+	}
+
+	/* make sure output directory exists and is writeable */
+	if (opt_retrievePort > 0)
+	{
+		if (!OFStandard::dirExists(opt_outputDirectory))
+		{
+			DCMNET_FATAL("specified output directory does not exist");
+
+			return EC_CorruptedData;
+		}
+		else if (!OFStandard::isWriteable(opt_outputDirectory))
+		{
+			DCMNET_FATAL("specified output directory is not writeable");
+			return EC_CorruptedData;
+		}
+	}
+
+
+
+	/* network for move request and responses */
+	T_ASC_NetworkRole role = (opt_retrievePort > 0) ? NET_ACCEPTORREQUESTOR : NET_REQUESTOR;
+	OFCondition cond = ASC_initializeNetwork(role, OFstatic_cast(int, opt_retrievePort), opt_acse_timeout, &net);
+	if (cond.bad())
+	{
+		DCMNET_FATAL("cannot create network: " << DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+
+
+
+	/* set up main association */
+	cond = ASC_createAssociationParameters(&params, opt_maxPDU);
+	if (cond.bad()) {
+		DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+	ASC_setAPTitles(params, opt_ourTitle, opt_peerTitle, NULL);
+
+	gethostname(localHost, sizeof(localHost) - 1);
+	sprintf(peerHost, "%s:%d", opt_peer, OFstatic_cast(int, opt_port));
+	ASC_setPresentationAddresses(params, localHost, peerHost);
+
+	/*
+	* We also add a presentation context for the corresponding
+	* find sop class.
+	*/
+	cond = addPresentationContext(params, 1,
+		querySyntax[opt_queryModel].findSyntax);
+
+	cond = addPresentationContext(params, 3,
+		querySyntax[opt_queryModel].moveSyntax);
+
+	if (cond.bad()) {
+		DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+
+	DCMNET_DEBUG("Request Parameters:" << OFendl << ASC_dumpParameters(temp_str, params, ASC_ASSOC_RQ));
+
+	/* create association */
+	DCMNET_INFO("Requesting Association");
+	cond = ASC_requestAssociation(net, params, &assoc);
+	if (cond.bad()) {
+		if (cond == DUL_ASSOCIATIONREJECTED) {
+			T_ASC_RejectParameters rej;
+
+			ASC_getRejectParameters(params, &rej);
+			DCMNET_FATAL("Association Rejected:");
+			DCMNET_FATAL(ASC_printRejectParameters(temp_str, &rej));
+		}
+		else {
+			DCMNET_FATAL("Association Request Failed:");
+			DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+			return EC_CorruptedData;
+		}
+	}
+	/* what has been accepted/refused ? */
+	DCMNET_DEBUG("Association Parameters Negotiated:" << OFendl << ASC_dumpParameters(temp_str, params, ASC_ASSOC_AC));
+
+	if (ASC_countAcceptedPresentationContexts(params) == 0) {
+		DCMNET_FATAL("No Acceptable Presentation Contexts");
+		return EC_CorruptedData;
+	}
+
+	DCMNET_INFO("Association Accepted (Max Send PDV: " << assoc->sendPDVLength << ")");
+
+	/* do the real work */
+	cond = EC_Normal;
+	if (datasetList == NULL)
+	{
+		/* no files provided on command line */
+		cond = cmove(assoc, "");
+	}
+	else {
+		OFListIterator(DcmDataset) iter = datasetList->begin();
+		OFListIterator(DcmDataset) enditer = datasetList->end();
+		while ((iter != enditer) && cond.good())
+		{
+			cond = cmove(assoc, &(*iter));
+			++iter;
+		}
+	}
+
+	/* tear down association */
+	if (cond == EC_Normal)
+	{
+		if (opt_abortAssociation) {
+			DCMNET_INFO("Aborting Association");
+			cond = ASC_abortAssociation(assoc);
+			if (cond.bad()) {
+				DCMNET_FATAL("Association Abort Failed: " << DimseCondition::dump(temp_str, cond));
+				return EC_CorruptedData;
+			}
+		}
+		else {
+			/* release association */
+			DCMNET_INFO("Releasing Association");
+			cond = ASC_releaseAssociation(assoc);
+			if (cond.bad())
+			{
+				DCMNET_FATAL("Association Release Failed:");
+				DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+				return EC_CorruptedData;
+			}
+		}
+	}
+	else if (cond == DUL_PEERREQUESTEDRELEASE)
+	{
+		DCMNET_ERROR("Protocol Error: Peer requested release (Aborting)");
+		DCMNET_INFO("Aborting Association");
+		cond = ASC_abortAssociation(assoc);
+		if (cond.bad()) {
+			DCMNET_FATAL("Association Abort Failed: " << DimseCondition::dump(temp_str, cond));
+			return EC_CorruptedData;
+		}
+	}
+	else if (cond == DUL_PEERABORTEDASSOCIATION)
+	{
+		DCMNET_INFO("Peer Aborted Association");
+	}
+	else
+	{
+		DCMNET_ERROR("Move SCU Failed: " << DimseCondition::dump(temp_str, cond));
+		DCMNET_INFO("Aborting Association");
+		cond = ASC_abortAssociation(assoc);
+		if (cond.bad()) {
+			DCMNET_FATAL("Association Abort Failed: " << DimseCondition::dump(temp_str, cond));
+			return EC_CorruptedData;
+		}
+	}
+
+	cond = ASC_destroyAssociation(&assoc);
+	if (cond.bad()) {
+		DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+	cond = ASC_dropNetwork(&net);
+	if (cond.bad()) {
+		DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
+		return EC_CorruptedData;
+	}
+
+#ifdef HAVE_WINSOCK_H
+	WSACleanup();
+#endif
+
+	return EC_Normal;
 }
 

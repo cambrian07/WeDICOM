@@ -6,7 +6,7 @@
 
 #define OFFIS_CONSOLE_FINDSCU "findscu"
 
-static OFLogger findscuLogger = OFLog::getLogger("dcmtk.apps." OFFIS_CONSOLE_FINDSCU );
+static OFLogger m_moveSCULogger = OFLog::getLogger("dcmtk.apps." OFFIS_CONSOLE_FINDSCU );
 
 /* default application titles */
 #define APPLICATIONTITLE        "FINDSCU"
@@ -88,7 +88,7 @@ void CWEMoveSCUCallback::callback(
 CWEMoveSCU::CWEMoveSCU(void)
 	:m_pEventHandler(NULL)
 	,m_Callback(-1)
-	,m_findSCULogger( OFLog::getLogger("dcmtk.apps." "findSCU"))
+	,m_moveSCULogger( OFLog::getLogger("WePACS.apps." "moveSCU"))
 {
 	//=================================================================================
 	// 这个地方要对Appender进行操作
@@ -258,12 +258,12 @@ int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strC
 	}
 
 	/* print resource identifier */
-	//OFLOG_DEBUG(findscuLogger, rcsid << OFendl);
+	//OFLOG_DEBUG(m_moveSCULogger, rcsid << OFendl);
 
 	/* make sure data dictionary is loaded */
 	if (!dcmDataDict.isDictionaryLoaded())
 	{
-		OFLOG_WARN(findscuLogger, "no data dictionary loaded, check environment variable: "
+		OFLOG_WARN(m_moveSCULogger, "no data dictionary loaded, check environment variable: "
 			<< DCM_DICT_ENVIRONMENT_VARIABLE);
 	}
 
@@ -272,7 +272,7 @@ int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strC
 	//CFndExecuteSCU findscu;
 	//OFCondition cond = findscu.initializeNetwork(opt_acse_timeout);
 	//if (cond.bad()) {
-	//	OFLOG_ERROR(findscuLogger, DimseCondition::dump(temp_str, cond));
+	//	OFLOG_ERROR(m_moveSCULogger, DimseCondition::dump(temp_str, cond));
 	//	return 1;
 	//}
 
@@ -280,7 +280,7 @@ int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strC
 	OFCondition cond;
 	//OFCondition cond = moveSCU.initializeNetwork(opt_acse_timeout);
 	if (cond.bad()) {
-		OFLOG_ERROR(findscuLogger, DimseCondition::dump(temp_str, cond));
+		OFLOG_ERROR(m_moveSCULogger, DimseCondition::dump(temp_str, cond));
 		return 1;
 	}
 
@@ -359,14 +359,14 @@ int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strC
 
 	if (cond.bad())
 	{
-		OFLOG_ERROR(findscuLogger, DimseCondition::dump(temp_str, cond));
+		OFLOG_ERROR(m_moveSCULogger, DimseCondition::dump(temp_str, cond));
 	}
 
 	// destroy network structure
 	//cond = moveSCU.dropNetwork();
 	if (cond.bad()) 
 	{
-		OFLOG_ERROR(findscuLogger, DimseCondition::dump(temp_str, cond));
+		OFLOG_ERROR(m_moveSCULogger, DimseCondition::dump(temp_str, cond));
 	}
 
 	WSACleanup();

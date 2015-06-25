@@ -72,7 +72,7 @@ public:
 private:
 	IWEMoveSCUEventHandler * m_pEventHandler;
 	CWEMoveSCUCallback  m_Callback;
-	OFLogger m_findSCULogger;
+	OFLogger m_moveSCULogger;
 
 // private function
 private:
