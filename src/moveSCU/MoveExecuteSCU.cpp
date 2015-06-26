@@ -17,15 +17,15 @@ static void moveCallback(
 	int responseCount,
 	T_DIMSE_C_MoveRSP *rsp)
 {
-	CMoveExecuteSCUCallback *callback = OFreinterpret_cast(CMoveExecuteSCUCallback *, callbackData);
-	if (callback) callback->callback(request, responseCount, rsp);
+	CMoveExecuteSCUCallback *pCallback = OFreinterpret_cast(CMoveExecuteSCUCallback *, callbackData);
+	if (pCallback) pCallback->callback(request, responseCount, rsp);
 }
 
 
 static void	subOpCallback(void *callbackData, T_ASC_Network *aNet, T_ASC_Association **subAssoc)
 {
-	CMoveExecuteSCUSubOpCallback *callback = OFreinterpret_cast(CMoveExecuteSCUSubOpCallback *, callbackData);
-	if (callback) callback->callback(aNet, subAssoc);
+	CMoveExecuteSCUSubOpCallback *pCallback = OFreinterpret_cast(CMoveExecuteSCUSubOpCallback *, callbackData);
+	if (pCallback) pCallback->callback(aNet, subAssoc);
 }
 
 
@@ -98,7 +98,6 @@ void CMoveExecuteSCUSubOpDefaultCallback::callback(T_ASC_Network * aNet, T_ASC_A
 {
 	if (aNet == NULL) return;   /* help no net ! */
 
-	CMoveSCUSubOpSCP subOpSCP;
 
 	if (*subAssoc == NULL) {
 		/* negotiate association */
@@ -131,7 +130,8 @@ CMoveExecuteSCU::CMoveExecuteSCU()
 	opt_queryModel(QMPatientRoot),
 	opt_acse_timeout(30),
 	opt_outputDirectory("."),
-	m_pCallback(NULL)
+	m_pCallback(NULL),
+	m_pSubOpCallback(NULL)
 
 {
 
@@ -351,6 +351,13 @@ OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, DcmDataset* data
 	m_pCallback->setAssociation(assoc);
 	m_pCallback->setPresentationContextID(presId);
 
+
+	CMoveExecuteSCUSubOpDefaultCallback defaultSubOpCallback;
+	if (m_pSubOpCallback == NULL)
+	{
+		m_pSubOpCallback = &defaultSubOpCallback;
+	}
+
 	req.MessageID = msgId;
 	strcpy(req.AffectedSOPClassUID, sopClass);
 	req.Priority = DIMSE_PRIORITY_MEDIUM;
@@ -364,9 +371,11 @@ OFCondition CMoveExecuteSCU::moveSCU(T_ASC_Association * assoc, DcmDataset* data
 		strcpy(req.MoveDestination, opt_moveDestination);
 	}
 
-	OFCondition cond = DIMSE_moveUser(assoc, presId, &req, dataset,
-		moveCallback, &m_pCallback, opt_blockMode, opt_dimse_timeout, net, subOpCallback,
-		NULL, &rsp, &statusDetail, &rspIds, opt_ignorePendingDatasets);
+	OFCondition cond;
+
+	cond = DIMSE_moveUser(assoc, presId, &req, dataset,
+		moveCallback, m_pCallback, opt_blockMode, opt_dimse_timeout, net, subOpCallback,
+		m_pSubOpCallback, &rsp, &statusDetail, &rspIds, opt_ignorePendingDatasets);
 
 	if (cond == EC_Normal) {
 		OFString temp_str;
@@ -657,7 +666,7 @@ OFCondition CMoveExecuteSCU::performRetrieve(const char * peer,
 }
 
 
-OFCondition CMoveExecuteSCU::performRetrieve(const char * peer,
+OFCondition CMoveExecuteSCU::performRetrievebyDataset(const char * peer,
 	unsigned int port,
 	const char * ourTitle,
 	const char * peerTitle,

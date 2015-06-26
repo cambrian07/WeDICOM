@@ -164,7 +164,4 @@ private:
 	OFCmdUnsignedInt	opt_sleepDuring;
 
 
-
-
-
 };

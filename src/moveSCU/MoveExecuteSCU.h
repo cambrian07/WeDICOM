@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MoveSCUSubOpSCP.h"
+
 #include "dcmtkinclude.h"
 
 #include "dcmtk/config/osconfig.h" /* make sure OS specific configuration is included first */
@@ -174,6 +176,9 @@ protected: /* the two member variables are protected and can be accessed from de
 
 	/// current presentation context ID. Will contain valid value when callback() is called.
 	//T_ASC_PresentationContextID presId_;
+
+	CMoveSCUSubOpSCP subOpSCP;
+
 };
 
 
@@ -353,7 +358,7 @@ public:
 	*    This parameter, if non-NULL, points to a list of filenames (paths).
 	*  @return EC_Normal if successful, an error code otherwise
 	*/
-	OFCondition CMoveExecuteSCU::performRetrieve(
+	OFCondition CMoveExecuteSCU::performRetrievebyDataset(
 		const char * peer,
 		unsigned int port,
 		const char * ourTitle,
@@ -401,6 +406,7 @@ private:
 private:
 
 	CMoveExecuteSCUCallback* m_pCallback;
+	CMoveExecuteSCUSubOpCallback* m_pSubOpCallback;
 
 
 };

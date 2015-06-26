@@ -1,4 +1,5 @@
 #include "../src/findSCU/WEFindSCU.h"
+#include "../src/moveSCU/WEMoveSCU.h"
 #include "json/json.h"
 
 
@@ -86,7 +87,8 @@ void main()
 
 	// for test;
 	dcmJson["QueryRetrieveLevel"] = "PATIENT";
-	//dcmJson["PatientName"] = "Liu Qing Zhu";
+	dcmJson["PatientName"] = "Liu Qing Zhu";
+	//dcmJson["PatientName"] = "Wang^Rongchun";
 
 
 	std::string strDcmJson = writer.write(dcmJson);
@@ -97,10 +99,19 @@ void main()
 	CWEFindSCU findSCU;
 	findSCU.SetEventHandler(eventHandler);
 	//findSCU.SendQuery("192.168.1.108", 1004, "FINDSCU", "SVPACS", "aaa");
-	findSCU.SendQuery("127.0.0.1", 1004, "WEPACS", "DCMQRSCP", strDcmJson.c_str());
+	//findSCU.SendQuery("127.0.0.1", 1004, "WEPACS", "DCMQRSCP", strDcmJson.c_str());
 
 	// for junquzongyuan
-	//findSCU.SendQuery("10.0.55.249", 104, "AE_YDCF", "AE_PACSB", strDcmJson.c_str());
+	findSCU.SendQuery("10.0.55.249", 104, "AE_YDCF", "AE_PACSB", strDcmJson.c_str());
+
+
+	CWEMoveSCU moveSCU;
+	//moveSCU.SendRetireve("127.0.0.1", 1004, "WEPACS", "DCMQRSCP","WEPACS", strDcmJson.c_str());
+	//moveSCU.SendRetireve("127.0.0.1", 1004, "WEPACS", "DCMQRSCP",NULL, strDcmJson.c_str());
+
+
+	// for junquzongyuan
+	moveSCU.SendRetireve("10.0.55.249", 104, "AE_YDCF", "AE_PACSB", NULL, strDcmJson.c_str());
 
 	return;
 }

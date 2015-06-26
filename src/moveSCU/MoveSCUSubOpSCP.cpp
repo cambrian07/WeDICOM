@@ -177,7 +177,7 @@ CMoveSCUSubOpSCP::CMoveSCUSubOpSCP()
 
 
 {
-
+	opt_acceptAllXfers = OFTrue;
 }
 
 CMoveSCUSubOpSCP::~CMoveSCUSubOpSCP()
@@ -480,9 +480,9 @@ OFCondition CMoveSCUSubOpSCP::storeSCP(
 	}
 
 	OFString temp_str;
-	DCMNET_INFO( "Received Store Request: MsgID " << req->MessageID << ", ("
+	DCMNET_INFO("Received Store Request: MsgID " << req->MessageID << ", ("
 		<< dcmSOPClassUIDToModality(req->AffectedSOPClassUID, "OT") << ")");
-	DCMNET_DEBUG( DIMSE_dumpMessage(temp_str, *req, DIMSE_INCOMING, NULL, presID));
+	DCMNET_DEBUG(DIMSE_dumpMessage(temp_str, *req, DIMSE_INCOMING, NULL, presID));
 
 
 	//StoreCallbackData callbackData;
@@ -524,7 +524,7 @@ OFCondition CMoveSCUSubOpSCP::storeSCP(
 
 	if (cond.bad())
 	{
-		DCMNET_ERROR( "Store SCP Failed: " << DimseCondition::dump(temp_str, cond));
+		DCMNET_ERROR("Store SCP Failed: " << DimseCondition::dump(temp_str, cond));
 		/* remove file */
 		if (!opt_ignore)
 		{

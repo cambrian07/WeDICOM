@@ -95,14 +95,17 @@ public:
 	virtual void	SetEventHandler(IWEMoveSCUEventHandler * pEventHandler);
 
 	virtual bool	SendRetireve(const char* pszIP,
-		                      int nPort,
-							  const char* pszCallingAE,
-							  const char* pszCalledAE,
-		                      const char* pszDestAE,
-							  const char* pszSearchMask
-							  );
+		                         int nPort,
+							     const char* pszCallingAE,
+							     const char* pszCalledAE,
+		                         const char* pszDestAE,
+							     const char* pszSearchMask
+							     );
 
 
+protected:
+	unsigned int opt_retrievePort;
+	OFString opt_outputDirectory;
 
 
 };

@@ -89,6 +89,8 @@ CWEMoveSCU::CWEMoveSCU(void)
 	:m_pEventHandler(NULL)
 	,m_Callback(-1)
 	,m_moveSCULogger( OFLog::getLogger("WePACS.apps." "moveSCU"))
+	,opt_outputDirectory("D:\\dcm")
+	,opt_retrievePort(104)
 {
 	//=================================================================================
 	// 这个地方要对Appender进行操作
@@ -121,7 +123,11 @@ int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strC
 	OFCmdUnsignedInt      opt_port = 104;
 	OFCmdUnsignedInt      opt_repeatCount = 1;
 	OFBool                opt_secureConnection = OFFalse; /* default: no secure connection */
-	OFList<OFString>      overrideKeys;
+	DcmDataset            overrideKeys;
+
+
+	const char * opt_moveDestination;
+	QueryModel opt_queryModel;
 
 
 
@@ -134,220 +140,120 @@ int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strC
 	*/
 	dcmEnableAutomaticInputDataCorrection.set(OFFalse);
 
-	WSAData winSockData;
-	/* we need at least version 1.1 */
-	WORD winSockVersionNeeded = MAKEWORD( 1, 1 );
-	WSAStartup(winSockVersionNeeded, &winSockData);
 
-	/* evaluate command line */
-	{
-		/* check exclusive options first */
+	/* command line parameters */
 
-		/* command line parameters */
+	opt_ourTitle = "FINDSCU";
+	opt_peerTitle = "SVPACS";
+	opt_peer = "192.168.1.103";
+	opt_port = 1005;
+	//overrideKeys.push_back("0x0010,0x0040=M");
 
-		opt_ourTitle = "FINDSCU";
-		opt_peerTitle = "SVPACS";
-		opt_peer = "192.168.1.103";
-		opt_port = 1005;
-		//overrideKeys.push_back("0x0010,0x0040=M");
+	opt_peer = strIP;
+	opt_port = nPort;
+	opt_ourTitle = strCallingAE;
+	opt_peerTitle = strCalledAE;
 
-		opt_peer = strIP;
-		opt_port = nPort;
-		opt_ourTitle = strCallingAE;
-		opt_peerTitle = strCalledAE;
+	opt_moveDestination = strDestdAE;
 
-		//opt_networkTransferSyntax = EXS_Unknown;
-		opt_networkTransferSyntax = EXS_LittleEndianExplicit;
-		//opt_networkTransferSyntax = EXS_BigEndianExplicit;
-		//opt_networkTransferSyntax = EXS_LittleEndianImplicit;
-
-
-		//opt_abstractSyntax = UID_FINDModalityWorklistInformationModel;
-		//opt_abstractSyntax = UID_FINDPatientRootQueryRetrieveInformationModel;
-		//opt_abstractSyntax = UID_FINDStudyRootQueryRetrieveInformationModel;
-		//opt_abstractSyntax = UID_RETIRED_FINDPatientStudyOnlyQueryRetrieveInformationModel;
-		OFString strModel(strRetrieveLevel);
-		if (strModel.compare("STUDY") == 0)
-		{
-			opt_abstractSyntax = UID_MOVEStudyRootQueryRetrieveInformationModel;
-		}
-		if (strModel.compare("PATIENT") == 0)
-		{
-			opt_abstractSyntax = UID_MOVEPatientRootQueryRetrieveInformationModel;
-		}
-		else
-		{
-			opt_abstractSyntax = UID_MOVEStudyRootQueryRetrieveInformationModel;
-		}
-
-
-		//if (cmd.findOption("--enable-new-vr"))
-		if (false)
-		{
-			dcmEnableUnknownVRGeneration.set(OFTrue);
-			dcmEnableUnlimitedTextVRGeneration.set(OFTrue);
-		}
-		//if (cmd.findOption("--disable-new-vr"))
-		if (false)
-		{
-			dcmEnableUnknownVRGeneration.set(OFFalse);
-			dcmEnableUnlimitedTextVRGeneration.set(OFFalse);
-		}
-
-		//if (cmd.findOption("--timeout"))
-		if (false)
-		{
-			OFCmdSignedInt opt_timeout = 0;
-			dcmConnectionTimeout.set(OFstatic_cast(Sint32, opt_timeout));
-		}
-
-		//if (cmd.findOption("--acse-timeout"))
-		if (false)
-		{
-			OFCmdSignedInt opt_timeout = 0;
-			opt_acse_timeout = OFstatic_cast(int, opt_timeout);
-		}
-
-		//if (cmd.findOption("--dimse-timeout"))
-		if (false)
-		{
-			OFCmdSignedInt opt_timeout = 0;
-			opt_dimse_timeout = OFstatic_cast(int, opt_timeout);
-			opt_blockMode = DIMSE_NONBLOCKING;
-		}
-
-		//if (cmd.findOption("--max-pdu"))
-		//{
-		//  app.checkValue(cmd.getValueAndCheckMinMax(opt_maxReceivePDULength, ASC_MINIMUMPDUSIZE, ASC_MAXIMUMPDUSIZE));
-		//}
-		//if (cmd.findOption("--repeat"))
-		//{
-		//	app.checkValue(cmd.getValueAndCheckMin(opt_repeatCount, 1));
-		//}
-		//if (cmd.findOption("--abort"))  
-		//{
-		//	opt_abortAssociation = OFTrue;
-		//}
-		//if (cmd.findOption("--cancel"))
-		//{
-		//	app.checkValue(cmd.getValueAndCheckMin(opt_cancelAfterNResponses, 0));
-		//}
-		//if (cmd.findOption("--extract")) 
-		//{
-		//	opt_extractResponsesToFile = OFTrue;
-		//}
-
-		/* finally parse filenames */
-		//for (int i = 3; i <= paramCount; i++)
-		//{
-		//	cmd.getParam(i, currentFilename);
-		//	if (access(currentFilename, R_OK) < 0)
-		//	{
-		//		errormsg = "cannot access file: ";
-		//		errormsg += currentFilename;
-		//		app.printError(errormsg.c_str());
-		//	}
-		//	fileNameList.push_back(currentFilename);
-		//}
-
-		//if (fileNameList.empty() && overrideKeys.empty())
-		//{
-		//	app.printError("either query file or override keys (or both) must be specified");
-		//}
-
-	}
-
-	/* print resource identifier */
-	//OFLOG_DEBUG(m_moveSCULogger, rcsid << OFendl);
-
-	/* make sure data dictionary is loaded */
-	if (!dcmDataDict.isDictionaryLoaded())
-	{
-		OFLOG_WARN(m_moveSCULogger, "no data dictionary loaded, check environment variable: "
-			<< DCM_DICT_ENVIRONMENT_VARIABLE);
-	}
-
-	// declare findSCU handler and initialize network
-
-	//CFndExecuteSCU findscu;
-	//OFCondition cond = findscu.initializeNetwork(opt_acse_timeout);
-	//if (cond.bad()) {
-	//	OFLOG_ERROR(m_moveSCULogger, DimseCondition::dump(temp_str, cond));
-	//	return 1;
+	//OFString strDestAE;
+	//strDestAE = opt_moveDestination;
+	//if ( strDestAE.length() <= 0)
+	//{
+	//	opt_retrievePort = 0;
 	//}
+	//else
+	//{
+	//	opt_retrievePort = 104;
+	//}
+
+	opt_retrievePort = 10005;
+
+	//opt_networkTransferSyntax = EXS_Unknown;
+	opt_networkTransferSyntax = EXS_LittleEndianExplicit;
+	//opt_networkTransferSyntax = EXS_BigEndianExplicit;
+	//opt_networkTransferSyntax = EXS_LittleEndianImplicit;
+
+
+	//opt_abstractSyntax = UID_FINDModalityWorklistInformationModel;
+	//opt_abstractSyntax = UID_FINDPatientRootQueryRetrieveInformationModel;
+	//opt_abstractSyntax = UID_FINDStudyRootQueryRetrieveInformationModel;
+	//opt_abstractSyntax = UID_RETIRED_FINDPatientStudyOnlyQueryRetrieveInformationModel;
+	OFString strModel(strRetrieveLevel);
+	if (strModel.compare("STUDY") == 0)
+	{
+		opt_queryModel = QMStudyRoot;
+		opt_abstractSyntax = UID_MOVEStudyRootQueryRetrieveInformationModel;
+	}
+	if (strModel.compare("PATIENT") == 0)
+	{
+		opt_queryModel = QMPatientRoot;
+		opt_abstractSyntax = UID_MOVEPatientRootQueryRetrieveInformationModel;
+	}
+	else
+	{
+		opt_queryModel = QMStudyRoot;
+		opt_abstractSyntax = UID_MOVEStudyRootQueryRetrieveInformationModel;
+	}
+
+
 
 	CMoveExecuteSCU moveSCU;
 	OFCondition cond;
-	//OFCondition cond = moveSCU.initializeNetwork(opt_acse_timeout);
-	if (cond.bad()) {
-		OFLOG_ERROR(m_moveSCULogger, DimseCondition::dump(temp_str, cond));
-		return 1;
-	}
 
 
-	// test
 	fileNameList.clear();
-	//overrideKeys.clear();
-	//fileNameList.push_back("F:\\DICOM\\DCMTK学习笔记\\DICOM--worklist\\bin\\SVPACS\\SVPACS\\wlistqry.wl");
-	//fileNameList.push_back("g:\\namehello.dcm");
-
-	//DcmFileFormat df;
-	//df.loadFile("F:\\DICOM\\DCMTK学习笔记\\DICOM--worklist\\bin\\SVPACS\\SVPACS\\wlistqry.wl");
-	//DcmDataset dataset(*df.getDataset());
-	//DcmDataset dataset;
-	//cond = dataset.putAndInsertString(DcmTag(0x0010,0x0010), "Hello");
-	//if (cond.bad())
-	//{
-	//}
-	//dataset.saveFile("g:\\namehello.dcm");
-
-	// do the main work: negotiate network association, perform C-FIND transaction,
-	// process results, and finally tear down the association.
 
 	if (false)
 	{
-		//cond = moveSCU.performQuery(
-		//	opt_peer,
-		//	opt_port,
-		//	opt_ourTitle,
-		//	opt_peerTitle,
-		//	opt_abstractSyntax,
-		//	opt_networkTransferSyntax,
-		//	opt_blockMode,
-		//	opt_dimse_timeout,
-		//	opt_maxReceivePDULength,
-		//	opt_secureConnection,
-		//	opt_abortAssociation,
-		//	opt_repeatCount,
-		//	opt_extractResponsesToFile,
-		//	opt_cancelAfterNResponses,
-		//	&overrideKeys,
-		//	//NULL, /* we want to use the default callback */
-		//	&m_Callback,
-		//	&fileNameList);
+		cond = moveSCU.performRetrieve(
+			opt_peer,
+			opt_port,
+			opt_ourTitle,
+			opt_peerTitle,
+			opt_abstractSyntax,
+			opt_retrievePort,
+			opt_moveDestination,
+			opt_outputDirectory.c_str(),
+			opt_networkTransferSyntax,
+			opt_blockMode,
+			opt_dimse_timeout,
+			opt_maxReceivePDULength,
+			opt_queryModel,
+			opt_abortAssociation,
+			opt_repeatCount,
+			opt_cancelAfterNResponses,
+			//&overrideKeys,
+			NULL, /* we do not want to override keys */
+			NULL, /* we want to use the default callback */
+				  //&m_Callback,
+			&fileNameList);
 
 	}
 	else
 	{
-		//cond = moveSCU.performQuerybyDataset(
-		//	opt_peer,
-		//	opt_port,
-		//	opt_ourTitle,
-		//	opt_peerTitle,
-		//	opt_abstractSyntax,
-		//	opt_networkTransferSyntax,
-		//	opt_blockMode,
-		//	opt_dimse_timeout,
-		//	opt_maxReceivePDULength,
-		//	opt_secureConnection,
-		//	opt_abortAssociation,
-		//	opt_repeatCount,
-		//	opt_extractResponsesToFile,
-		//	opt_cancelAfterNResponses,
-		//	&overrideKeys,
-		//	//NULL, /* we want to use the default callback */
-		//	&m_Callback,
-		//	&vecDataset);
+		cond = moveSCU.performRetrievebyDataset(
+			opt_peer,
+			opt_port,
+			opt_ourTitle,
+			opt_peerTitle,
+			opt_abstractSyntax,
+			opt_retrievePort,
+			opt_moveDestination,
+			opt_outputDirectory.c_str(),
+			opt_networkTransferSyntax,
+			opt_blockMode,
+			opt_dimse_timeout,
+			opt_maxReceivePDULength,
+			opt_queryModel,
+			opt_abortAssociation,
+			opt_repeatCount,
+			opt_cancelAfterNResponses,
+			//&overrideKeys,
+			NULL, /* we do not want to override keys */
+			NULL, /* we want to use the default callback */
+			//&m_Callback,
+			&vecDataset);
 
 	}
 
@@ -362,16 +268,12 @@ int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strC
 		OFLOG_ERROR(m_moveSCULogger, DimseCondition::dump(temp_str, cond));
 	}
 
-	// destroy network structure
-	//cond = moveSCU.dropNetwork();
-	if (cond.bad()) 
-	{
-		OFLOG_ERROR(m_moveSCULogger, DimseCondition::dump(temp_str, cond));
-	}
-
-	WSACleanup();
 
 	return 0;
+
+
+
+
 }
 
 bool CWEMoveSCU::InitLog4Cplus()
@@ -438,12 +340,12 @@ void CWEMoveSCU::SetEventHandler(IWEMoveSCUEventHandler * pEventHandler)
 
 
 bool CWEMoveSCU::SendRetireve(const char* pszIP,
-                  int nPort,
-				  const char* pszCallingAE,
-				  const char* pszCalledAE,
-				  const char* pszDestAE,
-				  const char* pszSearchMask
-				  )
+	int nPort,
+	const char* pszCallingAE,
+	const char* pszCalledAE,
+	const char* pszDestAE,
+	const char* pszSearchMask
+	)
 {
 	OFList<DcmDataset> datasetList;
 	OFList<OFString> tagList;
