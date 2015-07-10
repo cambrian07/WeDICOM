@@ -97,6 +97,7 @@ CWEMoveSCU::CWEMoveSCU(void)
 	/* Setup DICOM connection parameters */ 
 	
 	InitLog4Cplus();
+	opt_retrievePort = 0;
 
 }
 
@@ -167,7 +168,7 @@ OFCondition CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const cha
 	//	opt_retrievePort = 104;
 	//}
 
-	opt_retrievePort = 10005;
+	//opt_retrievePort = 10005;
 
 	//opt_networkTransferSyntax = EXS_Unknown;
 	opt_networkTransferSyntax = EXS_LittleEndianExplicit;

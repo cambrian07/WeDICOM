@@ -106,6 +106,13 @@ void main()
 	{
 		OutputDebugStringA("Retrieve failed!\n");
 	}
+
+	if (!moveSCU.SendRetrieve("127.0.0.1", 1004, "WEPACS", "DCMQRSCP", "WEPACSSTORESCP", strDcmJson.c_str()))
+	{
+		OutputDebugStringA("Retrieve failed!\n");
+	}
+
+
 	//moveSCU.SendRetrieve("127.0.0.1", 1004, "WEPACS", "DCMQRSCP",NULL, strDcmJson.c_str());
 
 

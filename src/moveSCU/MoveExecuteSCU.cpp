@@ -655,6 +655,7 @@ OFCondition CMoveExecuteSCU::performRetrieve(const char * peer,
 		DCMNET_FATAL(DimseCondition::dump(temp_str, cond));
 		return EC_CorruptedData;
 	}
+	net = NULL;
 
 #ifdef HAVE_WINSOCK_H
 	WSACleanup();
