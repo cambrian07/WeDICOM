@@ -105,7 +105,7 @@ CWEMoveSCU::~CWEMoveSCU(void)
 {
 }
 
-int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strCallingAE, const char * strCalledAE, const char * strDestdAE, OFList<DcmDataset>& vecDataset, OFList<OFString>& vecTagValue, const char * strRetrieveLevel)
+OFCondition CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strCallingAE, const char * strCalledAE, const char * strDestdAE, OFList<DcmDataset>& vecDataset, OFList<OFString>& vecTagValue, const char * strRetrieveLevel)
 {
 	OFList<OFString>      fileNameList;
 	OFBool                opt_abortAssociation = OFFalse;
@@ -269,7 +269,7 @@ int CWEMoveSCU::PerformRetrieve(const char * strIP, int nPort, const char * strC
 	}
 
 
-	return 0;
+	return cond;
 
 
 
@@ -339,7 +339,7 @@ void CWEMoveSCU::SetEventHandler(IWEMoveSCUEventHandler * pEventHandler)
 }
 
 
-bool CWEMoveSCU::SendRetireve(const char* pszIP,
+bool CWEMoveSCU::SendRetrieve(const char* pszIP,
 	int nPort,
 	const char* pszCallingAE,
 	const char* pszCalledAE,
@@ -370,7 +370,12 @@ bool CWEMoveSCU::SendRetireve(const char* pszIP,
 		return false;
 	}
 
-	PerformRetrieve(pszIP, nPort, pszCallingAE, pszCalledAE, pszDestAE, datasetList, tagList, strQueryLevel.c_str());
+	OFCondition cond;
+	cond = PerformRetrieve(pszIP, nPort, pszCallingAE, pszCalledAE, pszDestAE, datasetList, tagList, strQueryLevel.c_str());
+	if (cond.bad())
+	{
+		return false;
+	}
 	return true;
 }
 

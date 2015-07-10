@@ -76,7 +76,7 @@ private:
 
 // private function
 private:
-	int PerformRetrieve(const char * strIP, 
+	OFCondition PerformRetrieve(const char * strIP,
 	                    int nPort, 
 		                const char * strCallingAE,
 	                	const char * strCalledAE, 
@@ -94,7 +94,7 @@ private:
 public:
 	virtual void	SetEventHandler(IWEMoveSCUEventHandler * pEventHandler);
 
-	virtual bool	SendRetireve(const char* pszIP,
+	virtual bool	SendRetrieve(const char* pszIP,
 		                         int nPort,
 							     const char* pszCallingAE,
 							     const char* pszCalledAE,
